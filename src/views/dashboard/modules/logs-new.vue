@@ -45,7 +45,7 @@ a-card.log(:bordered="false")
 </template>
 
 <script lang="ts" name="Log" setup>
-  import type { Log } from '@/store/modules/log/types'
+  import type { Log } from '@/types/log'
 
   const props = defineProps({
     logs: {
@@ -65,7 +65,7 @@ a-card.log(:bordered="false")
   }
 
   .start-time {
-    font-size: 11px;
+    font-size: var(--gpt-font-sm);
   }
 
   .tag {
@@ -102,7 +102,7 @@ a-card.log(:bordered="false")
   }
 
   :deep(.arco-list-small .arco-list-content-wrapper .arco-list-content > .arco-list-item) {
-    padding: 6px 12px;
+    padding: var(--gpt-toolbar-padding);
   }
   :deep(.arco-list-item) {
     border-bottom: 1px solid var(--border-color);
@@ -113,13 +113,13 @@ a-card.log(:bordered="false")
   }
   :deep(.arco-list) {
     border-radius: 0;
-    font-size: 12px;
+    font-size: var(--gpt-font-base);
     color: var(--main-font-color);
   }
 
   .total-time {
     background: var(--th-bg-color);
-    border-radius: 4px;
+    border-radius: var(--gpt-radius-sm);
     padding: 0 4px;
     min-width: max-content;
   }
@@ -142,7 +142,7 @@ a-card.log(:bordered="false")
     .arco-list-item {
       border: none;
       background: var(--danger-bg-color);
-      border-radius: 4px;
+      border-radius: var(--gpt-radius-sm);
     }
   }
 
@@ -154,12 +154,12 @@ a-card.log(:bordered="false")
 <style lang="less">
   .ingest-log-tooltip {
     max-width: 600px;
-    font-size: 13px;
+    font-size: var(--gpt-font-md);
     padding: 6px 10px;
   }
   .arco-popover-popup-content.code-tooltip {
     font-family: var(--font-mono);
-    font-size: 13px;
+    font-size: var(--gpt-font-md);
     padding: 6px 10px;
     white-space: pre-wrap;
     max-width: 600px;

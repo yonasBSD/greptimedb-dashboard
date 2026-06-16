@@ -1,8 +1,6 @@
 <template lang="pug">
-a-layout.full-height-layout.pipefile-view(
-  style="box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.08); height: calc(100vh - 30px)"
-)
-  a-layout-sider(style="width: 45%" :resize-directions="['right']")
+a-layout.full-height-layout.pipefile-view
+  a-layout-sider(style="width: 50%" :resize-directions="['right']")
     a-card.light-editor-card(:bordered="false")
       template(#title)
         .card-title-with-description
@@ -16,7 +14,7 @@ a-layout.full-height-layout.pipefile-view(
             a-button(
               v-if="!isCreating"
               type="text"
-              status="warning"
+              status="danger"
               size="small"
             )
               | {{ t('common.delete') }}
@@ -31,27 +29,25 @@ a-layout.full-height-layout.pipefile-view(
     a-form(
       ref="formRef"
       layout="vertical"
-      style="padding: 10px 10px 0 10px"
       :model="currFile"
       :rules="rules"
     )
-      a-form-item(
+      a-form-item.pipeline-form-toolbar-field.pipeline-form-toolbar-field--name(
         v-if="isCreating"
         field="name"
         label="Pipeline name"
-        style="width: 200px"
       )
         a-input(v-model="currFile.name" placeholder="Pipeline name")
-      a-form-item(v-if="!isCreating" field="version" label="Version")
+      a-form-item.pipeline-form-toolbar-field(v-if="!isCreating" field="version" label="Version")
         a-space
           | {{ currFile.version }}
 
-      a-form-item(field="content" label="Yaml Content")
+      a-form-item.pipeline-content-item(field="content" label="Yaml Content")
         template(#help)
           div
-        .full-width-height-editor.pipeline-editor(:class="editorHeightClass")
+        .full-width-height-editor.pipeline-editor.gpt-light-editor.gpt-square-editor(:class="editorHeightClass")
           LangEditor(v-model="currFile.content" style="width: 100%; height: 100%")
-  a-layout-content.content-wrapper(style="display: flex; flex-direction: column; padding-bottom: 22px")
+  a-layout-content.content-wrapper
     a-card.light-editor-card(title="Input" :bordered="false")
       template(#extra)
         a-space
@@ -59,6 +55,7 @@ a-layout.full-height-layout.pipefile-view(
             v-model="selectedContentType"
             style="width: 150px"
             placeholder="Content Type"
+            size="small"
             @change="handleInputChange"
           )
             a-option(value="text/plain") text
@@ -74,7 +71,7 @@ a-layout.full-height-layout.pipefile-view(
 
       a-alert(v-if="ymlError" type="error")
         | {{ ymlError }}
-      .full-width-height-editor
+      .full-width-height-editor.pipeline-side-editor.gpt-light-editor.gpt-square-editor
         CodeMirror(
           v-model="debugForm.content"
           style="width: 100%; height: 100%"
@@ -84,7 +81,7 @@ a-layout.full-height-layout.pipefile-view(
           :indent-with-tab="true"
           :tabSize="2"
         )
-    .section-divider
+
     a-card.light-editor-card.output(title="Output" :bordered="false")
       template(#extra)
         a-radio-group.output-view-toggle(v-model="outputViewMode" type="button" size="small")
@@ -111,16 +108,8 @@ a-layout.full-height-layout.pipefile-view(
             .legend-color.timestamp
             .legend-label Timestamp
 
-      a-empty(
-        v-if="parsedOutputData.records && parsedOutputData.records.rows.length === 0"
-        style="border: 1px solid var(--color-border); border-radius: 2px; height: 100%; display: flex; align-items: center; justify-content: center; flex: 1"
-        description="No parsed data. Click Test to see results."
-      )
-
       // Table View
-      .output-table(
-        v-if="outputViewMode === 'table' && parsedOutputData.records && parsedOutputData.records.rows.length > 0"
-      )
+      .output-table(v-if="outputViewMode === 'table'")
         DataTable(
           :data="tableData"
           :columns="tableColumns"
@@ -129,10 +118,13 @@ a-layout.full-height-layout.pipefile-view(
           :wrap-line="true"
         )
 
+      .output-empty(v-else-if="isOutputEmpty")
+        a-empty.data-table-empty(description="No data")
+          template(#image)
+            img.data-table-empty-icon(alt="" :src="tableEmptyIcon")
+
       // JSON View
-      .full-width-height-editor(
-        v-if="outputViewMode === 'json' && parsedOutputData.records && parsedOutputData.records.rows.length > 0"
-      )
+      .full-width-height-editor.pipeline-side-editor.gpt-light-editor.gpt-square-editor(v-else)
         CodeMirror(
           style="width: 100%; height: 100%"
           :model-value="debugResponse"
@@ -159,6 +151,7 @@ a-layout.full-height-layout.pipefile-view(
   import type { ColumnType } from '@/types/query'
   import router from '@/router'
   import DataTable from '@/components/data-table/index.vue'
+  import tableEmptyIcon from '@/assets/images/table-empty.svg?url'
   import LangEditor from '@/components/lang-editor.vue'
   import CreateTableModal from './create-table-modal/index.vue'
   import { toObj } from '../query/until'
@@ -327,6 +320,7 @@ transform:
   // DataTable specific variables
   const tableData = ref<Array<any>>([])
   const tableColumns = ref<Array<ColumnType>>([])
+  const isOutputEmpty = computed(() => tableData.value.length === 0)
 
   const schemaMapping = {
     TIMESTAMP_SECOND: 'TimestampSecond',
@@ -410,9 +404,35 @@ transform:
 </script>
 
 <style lang="less" scoped>
+  .pipefile-view {
+    height: calc(100vh - 24px);
+    background: var(--gpt-bg-app);
+    font-size: var(--gpt-font-md);
+  }
+
+  .pipefile-view :deep(.arco-resizebox-trigger-vertical) {
+    width: 1px;
+    background: var(--gpt-border-strong);
+
+    &::before,
+    &::after {
+      display: none;
+    }
+  }
+
+  .pipefile-view :deep(.arco-layout-sider-children) {
+    height: auto;
+    overflow: visible;
+  }
+
   .content-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-bottom: 0;
+
     :deep(.arco-card-body) {
-      padding: 10px 10px 0 10px;
+      padding: 0;
       overflow: hidden;
     }
   }
@@ -421,10 +441,10 @@ transform:
   // EDITOR COMPONENTS
   // ===================
   .full-width-height-editor.pipeline-editor {
-    height: calc(100vh - 238px); // Taller for creating mode (no version field)
+    height: calc(100vh - 195px);
 
     &.editing {
-      height: calc(100vh - 298px); // Shorter for editing mode (has version field)
+      height: calc(100vh - 241px);
     }
   }
 
@@ -434,6 +454,8 @@ transform:
   .light-editor-card {
     display: flex;
     flex-direction: column;
+    background: var(--gpt-bg-panel);
+    border-radius: 0;
 
     :deep(.arco-card-body) {
       flex: 1;
@@ -450,6 +472,10 @@ transform:
   // ===================
   // OUTPUT SECTION
   // ===================
+  .light-editor-card.output {
+    border: 1px solid var(--gpt-border-default);
+  }
+
   .output-header {
     display: flex;
     justify-content: space-between;
@@ -467,8 +493,24 @@ transform:
   .output-table {
     overflow: auto;
     flex: 1;
-    border: 1px solid var(--color-border);
-    border-radius: 2px;
+  }
+
+  .output-empty {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+
+    :deep(.data-table-empty .arco-empty-description) {
+      font-family: var(--font-mono);
+      font-size: var(--gpt-font-lg);
+    }
+
+    .data-table-empty-icon {
+      width: 52px;
+      height: 52px;
+    }
   }
 
   // ===================
@@ -485,25 +527,24 @@ transform:
     overflow: hidden;
   }
 
-  :deep(.arco-radio-button.arco-radio-checked) {
-    color: var(--color-primary);
-  }
   .card-title-with-description {
     overflow: hidden;
+
     .card-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: var(--color-text-1);
-      margin-bottom: 4px;
+      margin-bottom: 2px;
+      color: var(--gpt-text-primary);
+      font-size: var(--gpt-font-md);
+      font-weight: 700;
+      line-height: 18px;
     }
 
     .card-description {
-      font-size: 13px;
-      color: var(--color-text-2);
-      line-height: 1.4;
+      color: var(--gpt-text-secondary);
+      font-size: var(--gpt-font-sm);
       font-weight: normal;
-      text-overflow: ellipsis;
+      line-height: 16px;
       overflow: hidden;
+      text-overflow: ellipsis;
     }
   }
 
@@ -511,33 +552,18 @@ transform:
   // SEMANTIC TYPE STYLES
   // ===================
 
-  // Define semantic type colors as CSS variables at component level
-  .pipefile-view {
-    --semantic-field-bg: #f6ffed;
-    --semantic-field-text: #36b174;
-    --semantic-field-legend: #36b174;
-
-    --semantic-tag-bg: #fff7e6;
-    --semantic-tag-text: #e1b84d;
-    --semantic-tag-legend: #e1b84d;
-
-    --semantic-timestamp-bg: #e6f4ff;
-    --semantic-timestamp-text: #417aff;
-    --semantic-timestamp-legend: #417aff;
-    font-size: 13px;
-  }
-
   .semantic-legend {
     display: flex;
     align-items: center;
     gap: 16px;
     margin-bottom: 12px;
+    margin-top: 12px;
     justify-content: flex-end;
 
     .legend-title {
-      font-size: 12px;
+      font-size: var(--gpt-font-base);
       font-weight: 600;
-      color: var(--color-text-2);
+      color: var(--gpt-text-secondary);
     }
 
     .legend-items {
@@ -557,58 +583,72 @@ transform:
         border: 1px solid var(--color-border-3);
 
         &.field {
-          background-color: var(--semantic-field-legend);
+          background-color: var(--gpt-semantic-field);
         }
 
         &.tag {
-          background-color: var(--semantic-tag-legend);
+          background-color: var(--gpt-semantic-tag);
         }
 
         &.timestamp {
-          background-color: var(--semantic-timestamp-legend);
+          background-color: var(--gpt-semantic-timestamp);
         }
       }
 
       .legend-label {
-        font-size: 12px;
-        color: var(--color-text-2);
+        font-size: var(--gpt-font-base);
+        color: var(--gpt-text-secondary);
       }
     }
   }
 
   .output-table {
-    :deep(.arco-table-th-title) {
-      .timestamp {
-        background-color: var(--semantic-timestamp-bg);
-        color: var(--semantic-timestamp-text);
-        padding: 2px 4px;
-      }
-
-      .field {
-        background-color: var(--semantic-field-bg);
-        color: var(--semantic-field-text);
-        padding: 2px 4px;
-      }
-
-      .tag {
-        background-color: var(--semantic-tag-bg);
-        color: var(--semantic-tag-text);
-        padding: 2px 4px;
-      }
-    }
     :deep(.arco-table-size-medium .arco-table-td) {
-      font-size: 13px;
+      font-size: var(--gpt-font-md);
     }
   }
-  .light-editor-card :deep(.arco-card-header) {
-    border-bottom: 1px solid var(--color-border);
-    height: 70px;
+  .pipeline-form-toolbar-field {
+    padding: var(--gpt-toolbar-padding);
+
+    &--name {
+      width: 200px;
+    }
   }
+
+  .light-editor-card :deep(.arco-card-header) {
+    height: auto;
+    min-height: 0;
+    padding: var(--gpt-toolbar-padding);
+    border-bottom: 1px solid var(--gpt-border-default);
+    background: var(--gpt-bg-panel);
+  }
+
+  .light-editor-card :deep(.arco-card-size-medium .arco-card-header) {
+    height: auto;
+  }
+
+  .light-editor-card :deep(.arco-card-header-title) {
+    min-width: 0;
+  }
+
+  .light-editor-card :deep(.arco-card-header-extra) {
+    flex-shrink: 0;
+  }
+
+  .full-width-height-editor :deep(.cm-editor) {
+    border-right: 0;
+    border-left: 0;
+  }
+
+  .pipeline-side-editor :deep(.cm-editor) {
+    border-top: 0;
+  }
+
   .section-divider {
-    height: 6px;
-    background: var(--color-neutral-3);
+    height: 1px;
+    margin: 0;
+    background: var(--gpt-border-default);
     border: none;
-    margin: 10px 0 0;
     position: relative;
   }
 
@@ -616,13 +656,54 @@ transform:
   // PIPELINE ACTIONS CARD
   // ===================
   .pipeline-actions-card {
-    border: 1px solid var(--color-border-2);
-    border-radius: 4px;
-    margin: 10px 10px 0 10px;
-    padding: 10px 2px;
+    margin: 0;
+    padding: 0;
+    background: var(--gpt-bg-header);
+    border-top: 0;
+    border-right: 0;
+    border-bottom: 1px solid var(--gpt-border-default);
+    border-left: 0;
+    border-radius: 0;
 
     :deep(.arco-card-body) {
-      padding: 0;
+      display: flex;
+      gap: 8px;
+      padding: var(--gpt-toolbar-padding);
     }
+  }
+
+  .pipeline-actions-card :deep(.arco-btn) {
+    border-color: var(--gpt-border-strong);
+    color: var(--gpt-text-primary);
+    background: var(--gpt-bg-panel);
+  }
+
+  .pipeline-actions-card :deep(.arco-btn:hover) {
+    color: var(--gpt-brand-900);
+    background: var(--gpt-nav-active-bg);
+  }
+
+  .pipeline-content-item :deep(.arco-form-item-label-col) {
+    padding: var(--gpt-toolbar-padding);
+    background: var(--gpt-bg-header);
+    border-top: 1px solid var(--gpt-border-default);
+    border-bottom: 1px solid var(--gpt-border-default);
+  }
+
+  .pipeline-content-item :deep(.arco-form-item-wrapper-col) {
+    position: relative;
+  }
+
+  .pipeline-content-item :deep(.arco-form-item-message) {
+    position: absolute;
+    top: -26px;
+    right: 8px;
+    margin: 0;
+    line-height: 16px;
+    text-align: right;
+  }
+
+  :deep(.arco-form-item-layout-vertical > .arco-form-item-label-col) {
+    margin-bottom: 0;
   }
 </style>

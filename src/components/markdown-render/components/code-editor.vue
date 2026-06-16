@@ -7,7 +7,6 @@
           v-model:time-length="promForm.time"
           v-model:time-range="promForm.range"
           flex-direction="row-reverse"
-          button-class="query-time-button"
           :range-picker-visible="rangePickerVisible"
           :relative-time-map="queryTimeMap"
           :relative-time-options="queryTimeOptions"
@@ -38,18 +37,20 @@
     .operations(v-if="!disabled")
       a-button(:disabled="runDisabled" :loading="isLoading" @click="runCommand") {{ $t('playground.run') }}
       a-button(v-if="showReset" @click="reset") {{ $t('playground.reset') }}
-    CodeMirror(
-      v-model="code"
-      :extensions="[mapLanguages(lang)(), oneDark, keymap.of(defaultKeymap)]"
-      :disabled="disabled"
-    )
+    CodeMirror(v-model="code" :extensions="[mapLanguages(lang)(), keymap.of(defaultKeymap)]" :disabled="disabled")
     a-button.copy(type="text" title="Copy Code" @click="copy")
       svg
         use(href="#copy-new")
   .results(v-if="hasRecords")
     a-tabs.playground-tabs(:default-active-key="hasChart ? '2' : '1'")
       a-tab-pane(key="1" title="Table")
-        DataGrid(:data="result" :hasHeader="false")
+        PaginatedDataTable(
+          :data="tableModel.rows"
+          :columns="tableModel.columns"
+          :displayed-columns="tableModel.displayedColumns"
+          :ts-column="tableModel.tsColumn"
+          :show-context-menu="false"
+        )
       a-tab-pane(v-if="hasChart" key="2" title="Chart")
         DataChart(:data="result" :hasHeader="false" :defaultChartForm="chartParams ? JSON.parse(chartParams) : {}")
   .logs(v-if="log.type")
@@ -66,13 +67,14 @@
   import dayjs from 'dayjs'
   import { keymap } from '@codemirror/view'
   import { Codemirror as CodeMirror } from 'vue-codemirror'
-  import { oneDark } from '@codemirror/theme-one-dark'
   import useDataChart from '@/hooks/data-chart'
   import type { PromForm, ResultType } from '@/store/modules/code-run/types'
-  import type { Log } from '@/store/modules/log/types'
+  import type { Log } from '@/types/log'
   import { durations, durationExamples, timeOptionsArray, queryTimeMap } from '@/views/dashboard/config'
   import i18n from '@/locale'
   import { Message } from '@arco-design/web-vue'
+  import PaginatedDataTable from '@/components/paginated-data-table/index.vue'
+  import { normalizeRecordsToTableModel } from '@/utils/table-normalizer'
   import mapLanguages from './utils'
 
   // data
@@ -131,6 +133,9 @@
     type: '',
   } as ResultType)
   const log = ref({} as Log)
+
+  const tableModel = computed(() => normalizeRecordsToTableModel(result.value?.records))
+
   // TODO: better reset
   const reset = () => {
     defaultCode = codeFormat(slots?.default?.())
@@ -258,7 +263,7 @@
       right: 10px;
       top: 10px;
       z-index: 1;
-      border-radius: 4px;
+      border-radius: var(--gpt-radius-sm);
       cursor: pointer;
       transition: all 0.3s;
       background-color: var(--vp-c-black-mute);

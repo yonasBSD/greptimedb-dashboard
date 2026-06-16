@@ -18,7 +18,7 @@
       a-button(
         type="primary"
         size="large"
-        style="height: 40px; border-radius: 0 4px 4px 0"
+        style="height: var(--gpt-control-height-md); border-radius: 0 var(--gpt-radius-sm) var(--gpt-radius-sm) 0"
         :loading="queryLoading"
         @click="handleQuery"
       )
@@ -253,6 +253,22 @@
     editorView.focus()
   }
 
+  const replaceEditorContent = (text: string) => {
+    const singleLineContent = text.replace(/[\r\n]+/g, ' ').trim()
+    if (!editorView) {
+      emit('update:modelValue', singleLineContent)
+      return
+    }
+
+    const docLength = editorView.state.doc.length
+    editorView.dispatch({
+      changes: { from: 0, to: docLength, insert: singleLineContent },
+      selection: { anchor: singleLineContent.length },
+    })
+    editorView.focus()
+    codeUpdate(singleLineContent)
+  }
+
   const focus = () => {
     if (editorView) {
       editorView.focus()
@@ -281,6 +297,7 @@
   })
   defineExpose({
     insertTextAtCursor,
+    replaceEditorContent,
     focus,
     getCursorPosition,
     getText,
@@ -292,7 +309,7 @@
     display: flex;
     align-items: stretch;
     gap: 0;
-    min-height: 40px;
+    min-height: var(--gpt-control-height-md);
   }
 
   .query-button-container {
@@ -312,29 +329,34 @@
   }
 
   :deep(.cm-editor) {
-    border: 1px solid var(--color-border);
-    border-radius: 4px 0 0 4px;
+    height: var(--gpt-control-height-md);
+    overflow: visible;
+    width: 100%;
+    background: var(--gpt-bg-panel);
+    color: var(--gpt-text-primary);
+    border: 1px solid var(--gpt-editor-border);
+    border-radius: var(--gpt-radius-sm) 0 0 var(--gpt-radius-sm);
     transition: all 0.2s ease-in-out;
   }
 
-  :deep(.cm-editor) {
-    height: 40px;
-    overflow: visible;
-    width: 100%;
+  :deep(.cm-editor .cm-content),
+  :deep(.cm-editor .cm-line),
+  :deep(.ͼ1.cm-editor .cm-content),
+  :deep(.ͼ1.cm-editor .cm-line) {
+    line-height: var(--gpt-control-height-md);
   }
 
   :deep(.cm-scroller) {
     overflow: visible;
     font-family: var(--vp-font-family-base);
-    font-size: 14px;
+    font-size: var(--gpt-font-lg);
     font-weight: 400;
     line-height: 1.5;
   }
 
   :deep(.cm-content) {
-    line-height: 40px;
-    padding: 0 8px;
-    min-height: 40px;
+    padding: 0 var(--gpt-gap-md);
+    min-height: 32px;
     font-family: inherit;
     font-size: inherit;
     font-weight: inherit;
@@ -343,8 +365,10 @@
   :deep(.cm-line) {
     padding: 0;
   }
-  :deep(.cm-activeLine) {
-    background-color: transparent;
+
+  :deep(.cm-activeLine),
+  :deep(.ͼ1 .cm-activeLine) {
+    background-color: transparent !important;
   }
 
   :deep(.cm-gutters) {
@@ -363,10 +387,10 @@
     z-index: 1001;
   }
   :deep(.cm-tooltip.cm-tooltip-autocomplete) {
-    background-color: #f8f8f8;
-    border: 1px solid rgba(52, 79, 113, 0.2);
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background-color: var(--gpt-bg-surface);
+    border: 1px solid var(--gpt-border-default);
+    border-radius: var(--gpt-radius-sm);
+    box-shadow: 0 2px 8px var(--box-shadow-color);
 
     & > ul {
       max-height: 350px;
@@ -378,16 +402,16 @@
     }
 
     & > ul > li {
-      padding: 8px 12px;
+      padding: var(--gpt-gap-md) var(--gpt-gap-lg);
       cursor: pointer;
-      border-bottom: 1px solid rgba(52, 79, 113, 0.1);
+      border-bottom: 1px solid var(--gpt-border-subtle);
 
       &:hover {
-        background-color: #ddd;
+        background-color: var(--gpt-bg-header);
       }
 
       &[aria-selected] {
-        background-color: #d6ebff;
+        background-color: var(--gpt-nav-active-bg);
         color: unset;
       }
 
@@ -400,13 +424,13 @@
   }
 
   :deep(.cm-tooltip.cm-completionInfo) {
-    background-color: #d6ebff;
-    border: 1px solid rgba(52, 79, 113, 0.2);
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    background-color: var(--gpt-nav-active-bg);
+    border: 1px solid var(--gpt-border-default);
+    border-radius: var(--gpt-radius-sm);
+    box-shadow: 0 2px 8px var(--box-shadow-color);
     margin-top: -11px;
-    padding: 12px;
-    font-family: 'Open Sans', 'Lucida Sans Unicode', 'Lucida Grande', sans-serif;
+    padding: var(--gpt-gap-lg);
+    font-family: var(--font-family-base);
     min-width: 250px;
     max-width: min-content;
     z-index: 1001;
@@ -414,22 +438,22 @@
 
   :deep(.cm-completionIcon) {
     box-sizing: content-box;
-    font-size: 16px;
+    font-size: var(--gpt-font-xl);
     line-height: 1;
     margin-right: 10px;
     vertical-align: top;
-    color: #007acc;
+    color: var(--gpt-main-purple);
     opacity: 1;
   }
 
   :deep(.cm-completionMatchedText) {
-    color: #0066bf;
+    color: var(--gpt-brand-700);
     text-decoration: none;
     font-weight: bold;
   }
   :deep(.cm-completionDetail) {
     float: right;
-    color: #999;
-    font-size: 12px;
+    color: var(--gpt-text-muted);
+    font-size: var(--gpt-font-base);
   }
 </style>

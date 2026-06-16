@@ -1,9 +1,10 @@
 <template lang="pug">
 .trace-detail-container
-  .page-header
+  .page-header.gpt-page-header
     .header-content
-      a-button(type="text" @click="handleBack")
-        icon-left
+      a-button.trace-detail-back(type="text" size="small" @click="handleBack")
+        template(#icon)
+          icon-left
       .trace-info
         .trace-title
           span.operation-name {{ rootSpan?.span_name || 'Unknown Operation' }}
@@ -14,7 +15,7 @@
             | {{ traceId }}
   .content-container
     .cards-row
-      a-card.light-editor-card(title="Trace Timeline" :bordered="false")
+      a-card.trace-timeline-card.light-editor-card(title="Trace Timeline" :bordered="false")
         template(#extra)
           .service-filter
             span.filter-label Services:
@@ -45,7 +46,7 @@
 </template>
 
 <script setup name="TraceDetail" lang="ts">
-  import { ref, reactive, computed, watch, onActivated, onDeactivated } from 'vue'
+  import { ref, reactive, computed, watch, onMounted } from 'vue'
   import { useRoute, useRouter } from 'vue-router'
   import { IconLeft } from '@arco-design/web-vue/es/icon'
   import editorAPI from '@/api/editor'
@@ -171,49 +172,45 @@
   const rootSpan = computed(() => traceSpans.value.find((span) => !span.parent_span_id) || null)
   const traceId = computed(() => route.params.id as string)
 
-  // Watch for route changes
-
-  // Handle component activation (when navigating to detail page)
-  onActivated(() => {
-    // Only fetch data if we're on the detail page
-    if (route.name === 'dashboard-TraceDetail') {
-      resetState()
-      fetchTraceData()
-    }
-  })
-
-  // Handle component deactivation (when navigating away from detail page)
-  onDeactivated(() => {
-    // Reset state when leaving the detail page
+  function loadTraceData() {
     resetState()
-  })
+    fetchTraceData()
+  }
+
+  onMounted(loadTraceData)
+
+  watch(() => route.params.id, loadTraceData)
 </script>
 
 <style lang="less" scoped>
   .trace-detail-container {
+    display: flex;
+    flex-direction: column;
     height: 100%;
+    min-height: 0;
     overflow: hidden;
   }
 
-  .page-header {
-    padding: 8px 12px;
-    background: var(--card-bg-color);
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 0;
-    min-height: 48px;
+  .page-header.gpt-page-header {
+    justify-content: flex-start;
+
     .header-content {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: var(--gpt-gap-xs);
+      width: 100%;
 
-      :deep(.arco-btn) {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        color: var(--small-font-color);
+      :deep(.trace-detail-back.arco-btn-text.arco-btn-only-icon) {
+        flex-shrink: 0;
+        width: var(--gpt-control-height-sm);
+        height: var(--gpt-control-height-sm);
+        padding: 0;
+        color: var(--gpt-icon-color);
+        background-color: transparent !important;
 
         &:hover {
-          color: var(--brand-color);
+          color: var(--gpt-main-purple) !important;
+          background-color: transparent !important;
         }
       }
     }
@@ -222,29 +219,29 @@
       flex: 1;
       display: flex;
       align-items: center;
-      gap: 24px;
+      gap: var(--gpt-gap-xl);
 
       .trace-title {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: var(--gpt-gap-xl);
 
         .operation-name {
-          font-size: 15px;
-          font-weight: 800;
-          color: var(--main-font-color);
-          font-family: 'Gilroy', sans-serif;
+          font-size: var(--gpt-font-xl);
+          font-weight: 700;
+          color: var(--gpt-text-primary);
+          font-family: var(--font-family-base);
           line-height: 1.2;
         }
 
         .span-count {
-          background-color: var(--light-brand-color);
-          color: var(--brand-color);
-          border: 1px solid var(--brand-color);
-          font-size: 13px;
+          background-color: var(--gpt-nav-active-bg);
+          color: var(--gpt-main-purple);
+          border: 1px solid var(--gpt-main-purple);
+
           font-weight: 600;
-          padding: 4px 10px;
-          border-radius: 6px;
+          padding: var(--gpt-gap-xs) var(--gpt-gap-sm);
+          border-radius: var(--gpt-radius-md);
           line-height: 1;
         }
       }
@@ -252,35 +249,27 @@
       .trace-id {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: var(--gpt-gap-lg);
 
         .label {
-          font-size: 13px;
-          color: var(--small-font-color);
+          font-size: var(--gpt-font-md);
+          color: var(--gpt-text-primary);
           font-weight: 600;
         }
 
         .trace-id-value {
           font-family: var(--font-mono);
-          font-size: 13px;
-          color: var(--main-font-color);
+          font-size: var(--gpt-font-md);
+          color: var(--gpt-text-primary);
           font-weight: 500;
         }
       }
     }
   }
 
-  .content-container {
-    padding: 8px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-bottom: 16px;
-  }
-
   .cards-row {
     display: flex;
-    gap: 8px;
+    gap: var(--gpt-gap-md);
     flex: 1;
     min-height: 0;
 
@@ -295,16 +284,24 @@
         flex: 1.4;
       }
     }
+
+    :deep(#trace-attributes) {
+      border-left: 1px solid var(--gpt-border-default);
+    }
+
+    :deep(.trace-timeline-card .arco-card-header) {
+      border-bottom: none;
+    }
   }
 
   .service-filter {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--gpt-gap-md);
 
     .filter-label {
-      font-size: 12px;
-      color: var(--color-text-2);
+      font-size: var(--gpt-font-base);
+      color: var(--gpt-text-primary);
       font-weight: 500;
       white-space: nowrap;
     }
@@ -314,12 +311,12 @@
     }
 
     :deep(.arco-select-view-value) {
-      font-size: 12px;
+      font-size: var(--gpt-font-base);
     }
 
     :deep(.arco-tag) {
-      font-size: 11px;
-      padding: 1px 6px;
+      font-size: var(--gpt-font-sm);
+      padding: 1px var(--gpt-gap-sm);
     }
   }
 
@@ -329,7 +326,7 @@
   }
 
   :deep(.arco-card-body) {
-    padding: 0 10px 10px 10px;
+    padding: 0 var(--gpt-gap-lg) var(--gpt-gap-lg);
   }
 
   :deep(.arco-card.light-editor-card) {

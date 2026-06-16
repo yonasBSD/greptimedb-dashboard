@@ -1,73 +1,27 @@
-.result-tabs {
-  .arco-card {
-    padding: 0;
+.view-switch {
+  display: inline-flex;
+  flex-shrink: 0;
 
-    .arco-card-header {
-      height: 20px;
-      margin-bottom: 8px;
-      padding: 0;
-    }
-  }
+  /* outline + 直连子按钮：使用 Arco btn-group 原生叠边与圆角 */
+  .arco-btn-group .arco-btn-outline {
+    color: var(--gpt-text-secondary);
 
-  .arco-tabs-nav-type-rounded {
-    .arco-tabs-tab-close-btn {
-      margin-left: 10px;
-      font-size: 14px;
+    svg {
+      color: currentColor;
+      opacity: 1;
     }
 
-    .arco-tabs-tab {
-      height: 100%;
-      margin: 0;
-      padding: 11px 16px;
-      color: var(--hover-font-color);
-      font-size: 16px;
-      line-height: 18px;
-      background-color: transparent;
-      border: 0;
-      border-radius: 10px 10px 0 0;
-    }
-
-    .arco-tabs-tab-active {
-      color: var(--brand-color);
-      font-weight: 600;
-      font-size: 18px;
-      background-color: var(--card-bg-color);
-    }
-
-    .arco-tabs-tab::before {
-      position: absolute;
-      right: -30.5px;
-      bottom: 12.5px;
+    &:hover {
       z-index: 2;
-      display: inline-block;
-      width: 30px;
-      height: 26px;
-      background: transparent;
-      border-bottom-left-radius: 12px 12px;
-      content: '';
+      color: var(--gpt-text-secondary);
     }
 
-    .arco-tabs-tab:hover {
-      background-color: var(--hover-bg-color);
-    }
-
-    .arco-tabs-tab-active:hover {
-      color: var(--brand-color);
-      background-color: var(--card-bg-color);
-    }
-  }
-
-  .arco-tabs-content {
-    padding-top: 0;
-
-    .arco-tabs-content-item {
-      padding: 24px 16px;
-      background-color: var(--card-bg-color);
-      border-radius: 10px;
-    }
-
-    .arco-tabs-content-item:first-of-type {
-      border-top-left-radius: 0;
+    &.active,
+    &.active:hover {
+      z-index: 2;
+      color: var(--gpt-text-inverse);
+      background: var(--gpt-brand-900);
+      border-color: var(--gpt-brand-900);
     }
   }
 }
@@ -90,7 +44,7 @@
     margin-right: 30px;
   }
   .arco-select-view-single.arco-select-view-size-medium .arco-select-view-value {
-    font-size: 13px;
+    font-size: var(--gpt-font-md);
   }
 }
 
@@ -102,21 +56,22 @@
     height: 22px;
     margin: 0;
     padding: 0;
-    color: var(--third-font-color);
+    color: var(--gpt-text-muted);
     font-weight: 600;
-    font-size: 13px;
+    font-size: var(--gpt-font-base);
     line-height: 22px;
-    border-radius: 4px;
+    border-radius: var(--gpt-radius-sm);
   }
 
   .arco-pagination-item:hover {
-    background-color: var(--th-bg-color);
+    color: var(--gpt-brand-900);
+    background-color: var(--gpt-nav-active-bg);
   }
 
   .arco-pagination-item-active,
   .arco-pagination-item-active:hover {
-    color: var(--brand-color);
-    background: var(--light-brand-color);
+    color: var(--gpt-text-inverse);
+    background: var(--gpt-brand-900);
   }
 
   .arco-pagination-item:not(:last-child) {
@@ -125,7 +80,8 @@
 
   .arco-pagination-item-previous:not(.arco-pagination-item-disabled):hover,
   .arco-pagination-item-next:not(.arco-pagination-item-disabled):hover {
-    color: var(--brand-color);
+    color: var(--gpt-brand-900);
+    background-color: var(--gpt-nav-active-bg);
   }
 
   .arco-pagination-options {
@@ -141,7 +97,7 @@
     .arco-select-view-single.arco-select-view-size-medium .arco-select-view-value {
       min-height: 12px;
       padding: 0;
-      font-size: 12px;
+      font-size: var(--gpt-font-base);
       line-height: 22px;
     }
 
@@ -150,15 +106,15 @@
     }
 
     .arco-select-view-icon svg {
-      color: var(--main-font-color);
-      font-size: 10px;
+      color: var(--gpt-text-primary);
+      font-size: var(--gpt-font-xs);
       opacity: 0.4;
     }
   }
 }
 
 .arco-pagination {
-  font-size: 12px !important;
+  font-size: var(--gpt-font-base) !important;
 }
 
 .select-y {
@@ -170,30 +126,111 @@
 }
 
 .arco-form-item-label-col > .arco-form-item-label {
-  color: var(--main-font-color);
-  font-size: 12px;
-  opacity: 0.6;
+  color: var(--gpt-text-label);
+  font-size: var(--gpt-font-base);
+}
+
+/* Arco descriptions labels; slot content (e.g. a-typography-text) inherits label color */
+.arco-descriptions-item-label,
+.arco-descriptions-item-label-inline,
+.arco-descriptions-item-label-block {
+  color: var(--gpt-text-label);
+
+  .arco-typography {
+    color: inherit;
+  }
 }
 
 .arco-tag {
   font-weight: 400;
-  font-size: 11px !important;
 }
 
 .arco-table-size-small .arco-table-cell {
-  font-size: 13px;
+  font-size: var(--gpt-font-base);
   padding: 11px 10px;
+}
+
+.arco-table-size-mini .arco-table-cell {
+  font-size: var(--gpt-font-base);
+  padding: var(--gpt-gap-xs) var(--gpt-page-padding-x);
 }
 
 .arco-table {
   .arco-table-th {
     font-weight: 600;
   }
+
+  .arco-table-expand-btn {
+    color: var(--gpt-text-primary) !important;
+    background-color: transparent !important;
+
+    &:hover {
+      color: var(--gpt-text-primary) !important;
+      background-color: var(--gpt-nav-active-bg) !important;
+    }
+
+    .arco-icon,
+    svg {
+      color: var(--gpt-text-primary) !important;
+      stroke: currentColor;
+    }
+  }
+
+  .arco-link {
+    &:hover,
+    &:active {
+      background-color: transparent;
+    }
+  }
 }
 
-.arco-table-hover .arco-table-tr-drag .arco-table-td:not(.arco-table-col-fixed-left):not(.arco-table-col-fixed-right),
-.arco-table-hover:not(.arco-table-dragging)
-  .arco-table-tr:not(.arco-table-tr-empty):not(.arco-table-tr-summary):hover
-  .arco-table-td:not(.arco-table-col-fixed-left):not(.arco-table-col-fixed-right) {
-  background-color: var(--th-bg-color);
+// Semantic column header pill — fixed height so FIELD / TAG / TIMESTAMP align
+.gpt-semantic-th {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gpt-gap-xs);
+  box-sizing: border-box;
+  height: var(--gpt-semantic-th-height);
+  max-height: var(--gpt-semantic-th-height);
+  font-size: inherit;
+  line-height: 1;
+  border-radius: 2px;
+  vertical-align: middle;
+  white-space: nowrap;
+
+  .icon-12 {
+    flex-shrink: 0;
+    width: 12px;
+    height: 12px;
+  }
+
+  &.field {
+    background-color: var(--gpt-semantic-field-bg);
+    color: var(--gpt-semantic-field);
+  }
+
+  &.tag {
+    background-color: var(--gpt-semantic-tag-bg);
+    color: var(--gpt-semantic-tag);
+  }
+
+  &.timestamp {
+    background-color: var(--gpt-semantic-timestamp-bg);
+    color: var(--gpt-semantic-timestamp);
+  }
+}
+
+/* Timestamp column cells — Table Query, Logs Query, any DataTable */
+.timestamp-cell {
+  color: var(--gpt-accent-ts);
+}
+
+.ts-cell-detail-link {
+  cursor: pointer;
+  color: var(--gpt-accent-ts);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
 }

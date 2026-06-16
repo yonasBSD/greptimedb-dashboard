@@ -37,48 +37,51 @@ a-form.second-row-form(
   a-form-item(style="margin-right: 12px" :label="t('sqlBuilder.filters')")
     .condition-wrapper
       a-space(v-for="(condition, index) in form.conditions" :key="index")
-        a-input-group.input-group
-          a-select(
-            v-if="index > 0"
-            v-model="condition.relation"
-            style="width: auto"
-            :options="relationOptions"
-          )
-          a-select.field(
-            v-model="condition.field"
-            allow-search
-            style="width: 140px"
-            :placeholder="t('sqlBuilder.field')"
-            :trigger-props="{ autoFitPopupMinWidth: true }"
-            :options="fieldsOptions"
-            @change="() => handleFieldChange(condition)"
-          )
-          a-select.operator(
-            v-model="condition.operator"
-            style="width: auto"
-            :placeholder="t('sqlBuilder.operator')"
-            :trigger-props="{ autoFitPopupMinWidth: true }"
-            :options="getOperators(condition.field)"
-          )
-          template(v-if="condition.operator !== 'Not Exist' && condition.operator !== 'Exist'")
-            a-select.value(
-              v-if="getFieldType(condition.field) === 'Boolean'"
-              v-model.boolean="condition.value"
-              style="width: 60px"
-              :placeholder="t('sqlBuilder.value')"
-              :options="['true', 'false']"
+        .gpt-input-group-row
+          a-input-group
+            a-select(
+              v-if="index > 0"
+              v-model="condition.relation"
+              style="width: auto"
+              :options="relationOptions"
             )
-            .resizable-wrapper(v-else)
-              a-input.value(
+            a-select.field(
+              v-model="condition.field"
+              allow-search
+              style="width: 140px"
+              :placeholder="t('sqlBuilder.field')"
+              :trigger-props="{ autoFitPopupMinWidth: true }"
+              :options="fieldsOptions"
+              @change="() => handleFieldChange(condition)"
+            )
+            a-select.operator(
+              v-model="condition.operator"
+              style="width: auto"
+              :placeholder="t('sqlBuilder.operator')"
+              :trigger-props="{ autoFitPopupMinWidth: true }"
+              :options="getOperators(condition.field)"
+            )
+            template(v-if="condition.operator !== 'Not Exist' && condition.operator !== 'Exist'")
+              a-select.value(
+                v-if="getFieldType(condition.field) === 'Boolean'"
+                v-model.boolean="condition.value"
+                style="width: 60px"
+                :placeholder="t('sqlBuilder.value')"
+                :options="['true', 'false']"
+              )
+              a-input.value.filter-value-input(
+                v-else
                 v-model="condition.value"
                 style="width: 100%"
                 :placeholder="condition.operator === 'IN' || condition.operator === 'NOT IN' ? t('sqlBuilder.commaValuesHint') : t('sqlBuilder.value')"
               )
-          a-button.field-action(@click="() => removeCondition(index)")
-            icon-minus(style="cursor: pointer; font-size: 14px")
+          a-button.gpt-btn-outline-control(type="outline" size="small" @click="() => removeCondition(index)")
+            template(#icon)
+              icon-minus
 
-      a-button.field-action(@click="addCondition")
-        icon-plus(style="cursor: pointer; font-size: 14px")
+      a-button.gpt-btn-outline-control(type="outline" size="small" @click="addCondition")
+        template(#icon)
+          icon-plus
 
 // Third row: Order By, Limit, and Quick Filters
 a-form.third-row-form(
@@ -91,21 +94,20 @@ a-form.third-row-form(
   // Order By
   a-form-item(:label="t('sqlBuilder.orderBy')")
     a-space(size="small")
-      a-input-group.input-group
-        a-select(
-          v-model="form.orderByField"
-          style="width: auto"
-          allow-search
-          :placeholder="t('sqlBuilder.selectField')"
-          :trigger-props="{ autoFitPopupMinWidth: true }"
-          :options="fieldsOptions"
-        )
-        a-select(
-          v-model="form.orderBy"
-          style="width: 80px"
-          :placeholder="t('sqlBuilder.order')"
-          :options="orderOptions"
-        )
+      a-select(
+        v-model="form.orderByField"
+        style="width: auto"
+        allow-search
+        :placeholder="t('sqlBuilder.selectField')"
+        :trigger-props="{ autoFitPopupMinWidth: true }"
+        :options="fieldsOptions"
+      )
+      a-select(
+        v-model="form.orderBy"
+        style="width: 80px"
+        :placeholder="t('sqlBuilder.order')"
+        :options="orderOptions"
+      )
   // Limit
   a-form-item(:label="t('sqlBuilder.limit')")
     a-input-number(
@@ -130,7 +132,7 @@ a-form.third-row-form(
           @close="removeQuickFilter(quickFilter.name)"
         )
           span(:title="t('quickFilters.clickToApplyTitle')") {{ quickFilter.name }}
-        a-tag.quick-fields-save(type="text" style="cursor: pointer" @click="showSaveQuickFilter = true")
+        a-button.quick-fields-save(size="small" type="outline" @click="showSaveQuickFilter = true")
           template(#icon)
             icon-plus
           | {{ t('quickFilters.saveCurrentSearch') }}
@@ -669,6 +671,14 @@ a-modal(
   :deep(.arco-form-item-label-col) {
     padding-right: 8px;
   }
+
+  .sql-builder-form,
+  .second-row-form,
+  .third-row-form {
+    :deep(.arco-form-item-label) {
+      text-transform: uppercase;
+    }
+  }
   // First form-item in each row: fixed width 90px
   .sql-builder-form :deep(.arco-form-item:first-child .arco-form-item-label-col),
   .second-row-form :deep(.arco-form-item:first-child .arco-form-item-label-col),
@@ -685,10 +695,6 @@ a-modal(
     gap: 12px;
     align-items: center;
     flex-wrap: wrap;
-  }
-
-  .input-group {
-    display: flex;
   }
 
   .field {
@@ -710,76 +716,67 @@ a-modal(
   :deep(.arco-select-view-input) {
     width: 100px;
   }
-  :deep(.arco-btn-secondary[type='button']) {
-    color: var(--color-text-2);
-    background-color: var(--color-secondary);
-  }
+
   :deep(.arco-btn-text[type='button']) {
-    color: var(--color-text-2);
+    color: var(--gpt-text-secondary);
   }
 
   .more-toggle {
-    color: var(--color-text-2);
-    font-size: 14px;
+    color: var(--gpt-text-secondary);
+    font-size: var(--gpt-font-lg);
     line-height: 2;
   }
 
   .more-count {
-    color: var(--color-text-3);
+    color: var(--gpt-text-muted);
   }
 
   .more-popup {
-    background: var(--color-bg-1);
-    border: 1px solid var(--color-border);
-    border-radius: 8px;
+    background: var(--gpt-bg-panel);
+    border: 1px solid var(--gpt-border-default);
+    border-radius: var(--gpt-radius-md);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     min-width: 280px;
   }
 
   .more-popup-header {
     padding: 12px 16px;
-    border-bottom: 1px solid var(--color-border);
+    border-bottom: 1px solid var(--gpt-border-default);
   }
 
   .more-popup-header h4 {
     margin: 0;
-    font-size: 14px;
+    font-size: var(--gpt-font-lg);
     font-weight: 500;
-    color: var(--color-text-1);
+    color: var(--gpt-text-primary);
   }
 
   .more-popup-content {
     padding: 16px;
   }
 
-  // Fix input group corners in popup to match condition input group
-  .more-popup :deep(.input-group) .arco-select-view {
-    border-radius: 0 !important;
-  }
   .more-popup-content :deep(.arco-form-item-label) {
     min-width: 70px; // or whatever width fits your longest label
     width: 70px;
     display: inline-block;
     text-align: right;
   }
-  .field-action {
-    padding: 0 8px;
-  }
-
   .quick-filters-content {
     width: 100%;
   }
 
-  // Resizable wrapper for input
-  .resizable-wrapper {
-    display: inline-block;
+  .quick-fields-save {
+    border-style: dashed;
+    border-color: var(--gpt-border-strong);
+  }
+
+  /* value input 作为 group 末项：Arco 管圆角，此处仅宽度可拖 */
+  .arco-input-group :deep(> .arco-input-outer.filter-value-input),
+  .arco-input-group :deep(> .filter-value-input.arco-input-wrapper) {
     width: 140px;
     min-width: 60px;
     max-width: 600px;
     resize: horizontal;
     overflow: hidden;
-    vertical-align: middle;
-    // Ensure the resize handle is visible and usable
-    padding-right: 5px;
   }
 </style>

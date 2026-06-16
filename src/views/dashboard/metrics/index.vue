@@ -1,18 +1,17 @@
 <template lang="pug">
-a-layout.new-layout
+a-layout.new-layout.new-layout--workspace
   a-resize-box(
     v-model:width="sidebarWidth"
     :directions="['right']"
     :style="{ 'min-width': '100px', 'max-width': '40vw' }"
     :class="hideSidebar ? 'hide-sider' : ''"
   )
-    a-layout-sider(style="min-width: 210px" :width="actualSidebarWidth")
-      a-card.metrics-sidebar(:bordered="false")
+    a-layout-sider(style="height: 100%" :width="actualSidebarWidth")
       MetricSidebar(@copyText="handleCopyText" @insertText="handleInsertText")
 
   a-layout-content.layout-content
     a-card(:bordered="false")
-      .query-section
+      .query-section.gpt-query-strip
         PromQLEditor(
           ref="promqlEditorRef"
           v-model="currentQuery"
@@ -21,55 +20,73 @@ a-layout.new-layout
           @query="handleRunQuery"
         )
 
-    .section-divider
+    a-card.metrics-result-card.gpt-results-pane(:bordered="false")
+      .metrics-result-toolbar.gpt-results-toolbar
+        .view-switch
+          a-button-group
+            a-button(
+              size="small"
+              type="outline"
+              :title="$t('dashboard.table')"
+              :class="{ active: activeTab === 'table' }"
+              @click="setActiveTab('table')"
+            )
+              svg.icon-16
+                use(href="#tableview")
+            a-button(
+              size="small"
+              type="outline"
+              :title="$t('dashboard.chart')"
+              :class="{ active: activeTab === 'graph' }"
+              @click="setActiveTab('graph')"
+            )
+              svg.icon-16
+                use(href="#chart")
+          span.gpt-text-toolbar-meta(v-if="activeTab === 'graph' && seriesCount > 0") {{ seriesMetaLabel }}
 
-    a-card(:bordered="false")
-      a-tabs(v-model:active-key="activeTab" type="line")
-        a-tab-pane(key="table" title="Table")
+      .metrics-result-content
+        .metrics-table-view(v-show="activeTab === 'table'")
           .section-title
             a-space
               TimezoneInstantPicker(
                 v-model="instantQueryTime"
+                size="small"
                 placeholder="Evaluation time"
                 allow-clear
                 style="width: 210px"
-                size="small"
               )
 
-          .table-section
-            a-table(
-              size="small"
+          .table-section.gpt-table-panel
+            DataTable(
               :data="tableData"
+              :columns="tableColumns"
               :loading="queryLoading"
+              :show-context-menu="false"
+              :enable-cell-expand="false"
               :pagination="false"
-              :scroll="{ x: 800 }"
               :bordered="false"
               :show-header="false"
+              :scroll="{ x: 800 }"
             )
-              template(#columns)
-                a-table-column(title="Series" data-index="series" :width="600")
-                  template(#cell="{ record }")
-                    .series-cell
-                      | {{ record.metricName }}{
-                      template(v-if="record.labels && record.labels.length > 0")
-                        template(v-for="(label, index) in record.labels" :key="index")
-                          strong {{ label.key }}
-                          | ="{{ label.value }}"
-                          span(v-if="index < record.labels.length - 1") ,
-                      | }
-                a-table-column(title="Values" data-index="values" :width="200")
-                  template(#cell="{ record }")
-                    .values-cell {{ record.values }}
+              template(#column-series="{ record }")
+                .series-cell
+                  | {{ record.metricName }}{
+                  template(v-if="record.labels && record.labels.length > 0")
+                    template(v-for="(label, index) in record.labels" :key="index")
+                      strong {{ label.key }}
+                      | ="{{ label.value }}"
+                      span(v-if="index < record.labels.length - 1") ,
+                  | }
+              template(#column-values="{ record }")
+                .values-cell {{ record.values }}
 
-        a-tab-pane(key="graph" title="Graph")
+        .metrics-graph-view(v-show="activeTab === 'graph'")
           MetricsChart
-        template(#extra)
-          .series-count(v-if="seriesCount > 0") 
-            | Result series: {{ seriesCount }} &nbsp;&nbsp; step: {{ currentStep }}s
 </template>
 
 <script setup lang="ts">
   import { ref, computed, onMounted, watch, nextTick, provide } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import { useRoute, useRouter } from 'vue-router'
   import { useStorage } from '@vueuse/core'
   import { useSeries } from '@/hooks/use-series'
@@ -77,11 +94,17 @@ a-layout.new-layout
   import { Message } from '@arco-design/web-vue'
   import { storeToRefs } from 'pinia'
   import { useAppStore } from '@/store'
+  import DataTable from '@/components/data-table/index.vue'
   import type { MetricsContext } from './types'
   import MetricSidebar from './components/metric-sidebar.vue'
   import PromQLEditor from './components/prom-ql-editor.vue'
   import MetricsChart from './components/metrics-chart.vue'
 
+  defineOptions({
+    name: 'Metrics',
+  })
+
+  const { t } = useI18n()
   const route = useRoute()
   const router = useRouter()
   const seriesHook = useSeries()
@@ -98,7 +121,7 @@ a-layout.new-layout
     instantQueryTime,
   } = seriesHook
 
-  const sidebarWidth = useStorage('metrics-sidebar-width', 320)
+  const sidebarWidth = useStorage('metrics-sidebar-width', 228)
   const activeTab = ref(route.query.tab || 'table')
   const chartType = ref('line')
   const stepSelectionType = ref('medium')
@@ -217,7 +240,7 @@ a-layout.new-layout
 
   // Computed properties
   const actualSidebarWidth = computed(() => {
-    const minWidth = 100
+    const minWidth = 180
     const maxWidth = window.innerWidth * 0.4
     return Math.max(minWidth, Math.min(sidebarWidth.value, maxWidth))
   })
@@ -262,6 +285,11 @@ a-layout.new-layout
     return rows
   })
 
+  const tableColumns = [
+    { name: 'series', data_type: 'string', title: 'Series', width: 600 },
+    { name: 'values', data_type: 'string', title: 'Values', width: 200 },
+  ]
+
   const promqlEditorRef = ref()
 
   const seriesCount = computed(() => {
@@ -270,6 +298,12 @@ a-layout.new-layout
     }
     return tableResults.value?.length || 0
   })
+
+  const seriesMetaLabel = computed(() => t('metrics.resultMeta', { count: seriesCount.value, step: currentStep.value }))
+
+  const setActiveTab = (tab: 'table' | 'graph') => {
+    activeTab.value = tab
+  }
 
   const handleRunQuery = updateQueryParams
 
@@ -297,7 +331,9 @@ a-layout.new-layout
 
   const handleInsertText = (text: string) => {
     if (promqlEditorRef.value) {
-      promqlEditorRef.value.insertTextAtCursor(text)
+      promqlEditorRef.value.replaceEditorContent(text)
+    } else {
+      currentQuery.value = text.replace(/[\r\n]+/g, ' ').trim()
     }
   }
 
@@ -308,7 +344,7 @@ a-layout.new-layout
     })
   })
 
-  watch(activeTab, (newTab) => {
+  watch(activeTab, () => {
     setTimeout(() => {
       updateQueryParams()
     }, 200)
@@ -354,50 +390,7 @@ a-layout.new-layout
 
 <style lang="less" scoped>
   :deep(.arco-layout-sider-light) {
-    box-shadow: none;
-  }
-  .new-layout {
-    height: calc(100vh - 29px);
-    background: #fff;
-  }
-
-  .metrics-sidebar {
-    height: 100%;
-    background: var(--color-bg-container);
-  }
-
-  .layout-content {
-    background: var(--color-bg-container);
-    overflow-y: auto;
-  }
-
-  .query-layout {
-    padding: 0;
-
-    .page-header {
-      padding: 16px 24px 8px;
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--color-text-primary);
-      border-bottom: 1px solid var(--color-border);
-      background: var(--color-bg-container);
-    }
-
-    .content-wrapper {
-      padding: 16px 24px;
-    }
-
-    .query-layout-cards {
-      .arco-card {
-        margin-bottom: 16px;
-        border: 1px solid var(--color-border);
-        border-radius: 8px;
-
-        &:last-child {
-          margin-bottom: 0;
-        }
-      }
-    }
+    box-shadow: none !important;
   }
 
   .section-title {
@@ -410,50 +403,47 @@ a-layout.new-layout
     }
   }
 
-  .query-section {
-    padding: 8px;
-  }
-
-  .section-divider {
-    height: 6px;
-    background: var(--color-neutral-3);
-    border: none;
-    margin: 0;
-    position: relative;
-  }
   :deep(.arco-table-th) {
-    background-color: #fff;
+    background-color: var(--gpt-bg-panel);
   }
 
   .table-controls {
-    margin-bottom: 16px;
-    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--gpt-gap-xl);
+    border-bottom: 1px solid var(--gpt-border-default);
 
     .arco-space {
       align-items: center;
     }
   }
-  :deep(.arco-tabs-content) {
-    padding-top: 0;
-  }
-
-  .series-count {
-    font-size: 12px;
-    color: var(--color-text-3);
-    font-weight: normal;
-    margin-right: 8px;
-  }
-
-  .empty-state {
-    display: flex;
-    justify-content: center;
+  .metrics-result-toolbar .view-switch {
     align-items: center;
-    min-height: 200px;
+    gap: var(--gpt-gap-md);
   }
-  :deep(.arco-tabs-tab-active) {
-    color: var(--brand-color);
+
+  .metrics-result-content {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
-  :deep(.arco-tabs-nav-ink) {
-    background-color: var(--brand-color);
+
+  .metrics-graph-view {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .metrics-table-view {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .table-section {
+    flex: 1;
+    min-height: 0;
   }
 </style>

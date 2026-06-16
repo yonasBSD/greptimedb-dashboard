@@ -1,0 +1,196 @@
+/**
+ * Arco Design theme particles.
+ *
+ * Primary palette: main-dark (6) idle, main-purple (5/7) hover/active.
+ * Menu nav colors are overridden separately below — do not rely on primary-6 for menus.
+ */
+
+@arcoblue-1: #f7f3fc;
+@arcoblue-2: #ede7f8;
+@arcoblue-3: #c4a8f0;
+@arcoblue-4: #8b7ba8;
+@arcoblue-5: #5a4a70;
+@gpt-main-dark: #473460;
+@gpt-brand-900: @gpt-main-dark;
+@arcoblue-6: @gpt-main-dark;
+@gpt-color-white: #ffffff;
+@gpt-color-purple-bright: #722ed1;
+@gpt-main-purple: #702fed;
+@gpt-brand-primary-hover: #5519c4;
+@gpt-color-button-border: rgb(55, 65, 81);
+@gpt-color-form-label: fade(@gpt-main-dark, 50%);
+@gpt-size-navbar: 54px;
+@gpt-size-nav-item: 36px;
+@gpt-spacing-nav-gap: 4px;
+@gpt-spacing-nav-gutter: 8px;
+@gpt-radius-nav: 12px;
+
+@font-family: Geist, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+@color-primary-1: #f7f3fc;
+@color-primary-2: #ede7f8;
+@color-primary-3: #c4a8f0;
+@color-primary-4: #8b7ba8;
+@color-primary-5: @gpt-main-purple;
+@color-primary-6: @gpt-main-dark;
+@color-primary-7: @gpt-brand-primary-hover;
+
+/* Default body text: main-dark (replaces Arco neutral-10 / rgb(29, 33, 41)) */
+@color-text-1: @gpt-main-dark;
+/* Card body defaults to Arco color-text-2 (#4E5969); align with header title */
+@card-color-body: @color-text-1;
+
+@gpt-color-border-default: rgba(71, 52, 96, 0.09);
+@color-border: @gpt-color-border-default;
+
+@border-radius-small: 4px;
+@border-radius-medium: 6px;
+@border-radius-large: 8px;
+
+@size-mini: 20px;
+@size-small: 26px;
+@btn-font-weight: 600;
+@btn-size-mini-height: @size-mini;
+@btn-size-small-height: @size-small;
+
+@btn-size-mini-font-size: 12px;
+@btn-size-small-font-size: 12px;
+@btn-size-medium-font-size: 12px;
+@btn-size-mini-radius: @border-radius-small;
+@btn-size-small-radius: @border-radius-small;
+@btn-size-small-padding-horizontal: 12px;
+
+/* Primary button: dark idle → purple hover */
+@btn-primary-color-bg: @color-primary-6;
+@btn-primary-color-bg_hover: @color-primary-5;
+@btn-primary-color-bg_active: @color-primary-7;
+@btn-primary-color-border: @color-primary-6;
+@btn-primary-color-border_hover: @color-primary-5;
+@btn-primary-color-border_active: @color-primary-7;
+
+/* Outline / text: dark idle → purple hover */
+@btn-outline-color-text_hover: @color-primary-5;
+@btn-outline-color-border_hover: @color-primary-5;
+@btn-outline-color-text_active: @color-primary-7;
+@btn-outline-color-border_active: @color-primary-7;
+@btn-outline-color-border: var(--gpt-border-strong);
+
+@btn-secondary-color-bg: transparent;
+@btn-secondary-color-bg_hover: transparent;
+@btn-secondary-color-border: rgb(209, 213, 219);
+@btn-secondary-color-border_hover: @btn-secondary-color-border;
+@btn-secondary-color-text_hover: @gpt-main-purple;
+@btn-dashed-color-border: @gpt-color-button-border;
+
+@btn-text-color-text_hover: @color-primary-5;
+@btn-text-color-bg_hover: var(--gpt-nav-active-bg);
+
+@form-color-text-label: @gpt-color-form-label;
+@descriptions-color-text-label: @gpt-color-form-label;
+
+@input-color-bg: transparent;
+@input-color-bg_hover: var(--grey-bg-color);
+@input-color-bg_focus: transparent;
+@input-color-border: var(--gpt-border-strong);
+@input-color-border_hover: @gpt-main-dark;
+@input-color-border_focus: @gpt-main-purple;
+@input-color-text: @gpt-main-dark;
+@input-color-placeholder-text: var(--gpt-placeholder-color);
+@input-color-border_disabled: var(--gpt-border-subtle);
+@input-color-shadow_focus: transparent;
+@input-size-shadow_focus: 0;
+
+@input-group-color-separator-border: @input-color-border;
+
+/* Placeholder: input / select / picker / textarea / input-tag */
+@input-tag-color-placeholder: var(--gpt-placeholder-color);
+@picker-color-placeholder: var(--gpt-placeholder-color);
+
+/* Picker (date/time/range): match input idle / hover / focus */
+@picker-color-bg: @input-color-bg;
+@picker-color-bg_hover: @input-color-bg_hover;
+@picker-color-bg_focus: @input-color-bg_focus;
+@picker-color-border: @input-color-border;
+@picker-color-border_hover: @input-color-border_hover;
+@picker-color-border_focus: @input-color-border_focus;
+@picker-color-shadow_focus: @input-color-shadow_focus;
+@picker-size-shadow_focus: @input-size-shadow_focus;
+@picker-color-text: @gpt-main-dark;
+
+/* Checkbox / switch follow primary palette */
+@checkbox-mask-border-width: 1px;
+@checkbox-mask-color-bg_checked: @color-primary-6;
+@checkbox-mask-color-border: @gpt-main-dark;
+@checkbox-mask-color-border_hover: @gpt-main-dark;
+
+@radio-border-width: 1px;
+
+@switch-color-bg_on: @gpt-main-purple;
+@switch-color-bg_on_hover: @color-primary-7;
+
+/* Button-type radio (builder/code, view toggles): transparent idle, selected pill main-dark */
+@radio-group-button-color-bg: transparent;
+@radio-button-color-bg: transparent;
+@radio-button-color-bg_active: @gpt-main-dark;
+@radio-button-color-text_active: @gpt-color-white;
+@radio-button-color-bg_hover: transparent;
+@radio-button-color-text_hover: @gpt-main-purple;
+
+@tree-color-title-text: @gpt-main-dark;
+@tree-color-title-text_hover: @gpt-main-dark;
+@tree-color-title-text_highlight: @gpt-main-dark;
+
+@table-color-border: var(--gpt-border-subtle);
+@table-border-radius: @border-radius-small;
+@table-color-text-header-cell: var(--gpt-text-secondary);
+@table-color-bg-header-cell: var(--gpt-table-head-bg);
+@table-color-bg-header-sorted-cell: var(--gpt-table-head-bg);
+@table-color-bg-header-sorted-cell_hover: var(--gpt-nav-active-bg);
+@table-font-weight-header-text: 600;
+@table-color-text-body-cell: var(--gpt-text-primary);
+@table-color-expand-icon: @color-text-1;
+@table-color-expand-icon_hover: @color-text-1;
+@table-color-bg-expand-icon: transparent;
+@table-color-bg-expand-icon_hover: var(--gpt-nav-active-bg);
+@table-color-bg-body-cell: var(--gpt-bg-panel);
+@table-color-bg-body-sorted-cell: var(--gpt-bg-panel);
+@table-color-bg-body-stripe-row: var(--gpt-bg-surface);
+@table-color-bg-body-row_hover: var(--gpt-table-row-hover-bg);
+@table-color-bg-body-row_active: var(--gpt-bg-surface);
+@table-color-body-background: var(--gpt-bg-panel);
+
+/* Menu: separate from primary-6 — nav uses secondary gray + purple selected */
+@menu-border-radius: @gpt-radius-nav;
+@menu-margin-right-item-prefix-icon: 8px;
+@menu-horizontal-margin-right-item-prefix-icon: 8px;
+@menu-item-gap: @gpt-spacing-nav-gap;
+@menu-vertical-item-height: @gpt-size-nav-item;
+@menu-vertical-padding-vertical: @gpt-spacing-nav-gap;
+@menu-vertical-padding-horizontal: @gpt-spacing-nav-gap;
+@menu-vertical-item-padding-horizontal: @gpt-spacing-nav-gap;
+@menu-collapse-width: @gpt-size-navbar;
+@menu-collapse-padding-vertical: @gpt-spacing-nav-gap;
+@menu-collapse-padding-horizontal: @gpt-spacing-nav-gutter;
+
+@menu-light-color-bg: var(--gpt-bg-header);
+@menu-light-color-bg-item_default: transparent;
+@menu-light-color-bg-item_hover: var(--gpt-nav-active-bg);
+@menu-light-color-bg-item_selected: var(--gpt-nav-active-bg);
+@menu-light-color-bg-item_disabled: transparent;
+@menu-light-color-item_default: var(--gpt-text-secondary);
+@menu-light-color-item_hover: var(--gpt-brand-900);
+@menu-light-color-item_selected: var(--gpt-main-purple);
+@menu-light-color-icon_default: var(--gpt-text-secondary);
+@menu-light-color-icon_hover: var(--gpt-brand-900);
+@menu-light-color-icon_selected: var(--gpt-main-purple);
+
+@menu-dark-color-bg: @gpt-brand-900;
+@menu-dark-color-bg-item_default: @menu-dark-color-bg;
+@menu-dark-color-bg-item_hover: fade(@arcoblue-3, 14%);
+@menu-dark-color-bg-item_selected: fade(@arcoblue-3, 18%);
+@menu-dark-color-item_default: fade(@gpt-color-white, 62%);
+@menu-dark-color-item_hover: @gpt-color-white;
+@menu-dark-color-item_selected: @arcoblue-3;
+@menu-dark-color-icon_default: fade(@gpt-color-white, 62%);
+@menu-dark-color-icon_hover: @gpt-color-white;
+@menu-dark-color-icon_selected: @arcoblue-3;

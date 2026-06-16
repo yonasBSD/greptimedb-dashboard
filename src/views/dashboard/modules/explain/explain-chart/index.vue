@@ -3,10 +3,15 @@
   .header
     div(style="display: flex; align-items: center; justify-content: space-between; flex-direction: row")
       .stage-navigation
-        a-radio-group(v-model="localStageIndex" type="button" @change="onStageChange")
+        a-radio-group(
+          v-model="localStageIndex"
+          type="button"
+          size="small"
+          @change="onStageChange"
+        )
           a-radio(v-for="i in totalStages" :key="i - 1" :value="i - 1") Stage {{ i - 1 }}
       .root-plan-selector(v-if="availableRootPlans.length > 1")
-        a-select(v-model="selectedRootPlan" size="mini" style="width: 200px; margin-left: 8px")
+        a-select(v-model="selectedRootPlan" size="small" style="width: 200px; margin-left: 8px")
           a-option(v-for="root in availableRootPlans" :key="root" :value="root") {{ root }}
     ChartControls(
       v-model:highlight-type="highlightType"
@@ -322,35 +327,20 @@
     display: flex;
     flex-direction: column;
     height: calc(100% - 32px);
-    margin: 16px;
-    padding: 16px 16px;
-    border-radius: 6px;
-    box-shadow: 0 4px 10px 0 var(--border-color);
+
+    padding: var(--gpt-page-padding-y) var(--gpt-page-padding-x);
+
     .header {
       display: flex;
       justify-content: space-between;
-      border-bottom: 1px solid var(--light-border-color);
-      padding-bottom: 6px;
-      .arco-radio-group-button {
-        border-radius: 6px;
-      }
-      .arco-radio-button {
-        border-radius: 6px;
-        &.arco-radio-checked {
-          color: var(--brand-color);
-          border-color: var(--brand-color);
-          background-color: var(--card-bg-color);
-        }
-      }
+      border-bottom: 1px solid var(--gpt-border-default);
+      padding-bottom: var(--gpt-gap-sm);
     }
+
     .stage-navigation {
       display: flex;
       justify-content: center;
       align-items: center;
-
-      .arco-radio-group-button {
-        font-family: 'Gilroy';
-      }
     }
 
     .controls-wrapper {
@@ -398,7 +388,7 @@
       bottom: 10px;
       right: 10px;
       background-color: var(--card-bg-color);
-      border-radius: 4px;
+      border-radius: var(--gpt-radius-sm);
       padding: 4px;
       box-shadow: 0 2px 5px var(--box-shadow-color);
       z-index: 10;
@@ -411,26 +401,7 @@
       bottom: 10px;
       left: 50%;
       transform: translateX(-50%);
-      display: flex;
-      gap: 16px;
-      background-color: var(--card-bg-color);
-      border-radius: 4px;
-      padding: 4px 8px;
-      box-shadow: 0 2px 5px var(--box-shadow-color);
       z-index: 10;
-
-      .nav-arrow {
-        color: var(--main-font-color);
-
-        &:hover:not(:disabled) {
-          color: var(--brand-color);
-        }
-
-        &:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-      }
     }
 
     .zoom-controls,
@@ -449,7 +420,7 @@
     min-width: 200px;
     background-color: var(--card-bg-color);
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: var(--gpt-radius-sm);
     padding: 8px;
     box-shadow: 0 2px 5px var(--box-shadow-color);
     display: flex;
@@ -471,7 +442,12 @@
     .plan-name {
       font-weight: bold;
       color: var(--main-font-color);
-      font-size: 13px;
+      font-size: var(--gpt-font-md);
+    }
+
+    .plan-param {
+      color: var(--main-font-color);
+      font-size: var(--gpt-font-md);
     }
 
     .metric-progress-container {
@@ -481,7 +457,7 @@
     }
 
     .metric-label {
-      font-size: 13px;
+      font-size: var(--gpt-font-md);
       color: var(--small-font-color);
       margin-bottom: 4px;
       display: flex;
@@ -502,7 +478,7 @@
     }
 
     .plan-metrics {
-      font-size: 13px;
+      font-size: var(--gpt-font-md);
       color: var(--small-font-color);
       overflow-y: auto;
       flex: 1;

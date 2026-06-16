@@ -243,15 +243,14 @@ a-drawer.settings-drawer(
     .arco-drawer {
       height: auto;
       margin-left: 18px;
-      border-radius: 4px;
+      border-radius: var(--gpt-radius-sm);
       box-shadow: 0 4px 10px 0 var(--border-color);
       border: 1px solid var(--border-color);
       .arco-form-item-label-col {
         margin-bottom: 5px;
         > .arco-form-item-label {
-          color: var(--main-font-color);
+          color: var(--gpt-text-label);
           font-size: 13px;
-          opacity: 1;
         }
       }
       .arco-form-item {
@@ -278,7 +277,6 @@ a-drawer.settings-drawer(
     }
     .arco-link {
       margin-left: 2px;
-      color: var(--brand-color);
       font-size: 11px;
       padding: 0 2px;
       .arco-link-icon {

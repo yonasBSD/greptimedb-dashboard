@@ -1,36 +1,9 @@
 .arco-btn {
-  border-radius: 4px;
+  border-radius: var(--gpt-radius-sm);
+  line-height: 1;
 }
 
-.arco-btn-primary[type='button'] {
-  color: var(--white-font-color);
-  background-color: var(--brand-color);
-}
-
-.arco-btn-primary[type='button']:hover {
-  background-color: var(--hover-brand-color);
-}
-
-.arco-btn-primary[type='button'].arco-btn-loading {
-  background-color: var(--brand-color);
-}
-
-// .arco-btn-secondary[type='button'] {
-//   color: var(--brand-color);
-//   background-color: var(--light-brand-color);
-// }
-
-// .arco-btn-secondary[type='button'].arco-btn-loading {
-//   color: var(--brand-color);
-//   background-color: var(--light-brand-color);
-// }
-
-// .arco-btn-secondary[type='button']:hover {
-//   color: var(--brand-color);
-//   background-color: var(--light-brand-color);
-//   border: 1px solid var(--brand-color);
-// }
-
+/* Danger + disabled: not covered by primary palette */
 .arco-btn-secondary.arco-btn-status-danger {
   color: var(--danger-color);
   background: var(--danger-bg-color);
@@ -42,77 +15,171 @@
   border-color: transparent;
 }
 
-.arco-btn-text[type='button'] {
-  color: var(--brand-color);
-}
-
-.arco-btn-text[type='button']:hover {
-  color: var(--brand-color);
-  background-color: var(--th-bg-color);
-  &.copy {
-    color: var(--card-bg-color);
-  }
-}
-
-.arco-btn-outline,
-.arco-btn-outline[type='button'],
-.arco-btn-outline[type='submit'] {
-  color: var(--main-font-color);
-  border: 1px solid var(--border-color);
-}
-
-.arco-btn-outline:hover,
-.arco-btn-outline[type='button']:hover,
-.arco-btn-outline[type='submit']:hover,
-.arco-btn-outline.arco-btn-loading,
-.arco-btn-outline[type='button'].arco-btn-loading {
-  color: var(--brand-color);
-  border-color: var(--brand-color);
-}
-
 .arco-btn-primary.arco-btn-disabled,
 .arco-btn-primary[type='button'].arco-btn-disabled,
-.arco-btn-primary[type='submit'].arco-btn-disabled {
-  color: rgb(156 156 156);
-  background-color: rgb(240 240 240);
-}
-
+.arco-btn-primary[type='submit'].arco-btn-disabled,
 .arco-btn-secondary.arco-btn-disabled,
 .arco-btn-secondary[type='button'].arco-btn-disabled,
-.arco-btn-secondary[type='submit'].arco-btn-disabled {
-  color: rgb(156 156 156);
-  background-color: rgb(240 240 240);
-  border: 1px solid transparent;
+.arco-btn-secondary[type='submit'].arco-btn-disabled,
+.arco-btn-outline.arco-btn-disabled,
+.arco-btn-outline[type='button'].arco-btn-disabled,
+.arco-btn-outline[type='submit'].arco-btn-disabled,
+.arco-btn-text.arco-btn-disabled,
+.arco-btn-text[type='button'].arco-btn-disabled,
+.arco-btn-text[type='submit'].arco-btn-disabled {
+  color: var(--gpt-text-disabled);
+  background-color: var(--gpt-bg-disabled);
 }
 
 .arco-btn-outline.arco-btn-disabled,
 .arco-btn-outline[type='button'].arco-btn-disabled,
 .arco-btn-outline[type='submit'].arco-btn-disabled {
-  color: rgb(156 156 156);
-  background-color: rgb(240 240 240);
-  border: 1px solid transparent;
+  border: 1px solid var(--gpt-border-subtle);
 }
 
-.arco-btn-text.query-time-button,
-.arco-btn-text.query-time-button:hover {
-  color: var(--small-font-color);
-  background: var(--grey-bg-color);
-  border: 1px solid transparent;
-  padding: 0 10px;
-}
-
-.arco-btn-text.query-time-button:focus-within {
-  background: transparent;
-  border: 1px solid var(--hover-brand-color);
+.arco-btn-text.arco-btn-disabled,
+.arco-btn-text[type='button'].arco-btn-disabled,
+.arco-btn-text[type='submit'].arco-btn-disabled {
+  background-color: transparent;
 }
 
 .arco-btn-size-medium:not(.arco-btn-only-icon) .arco-btn-icon {
   margin-right: 10px;
+  line-height: 1;
 }
 
+/* medium only-icon：Arco 默认固定宽高；outline/dashed 保留横向 padding、宽度自适应 */
+.arco-btn-size-medium.arco-btn-only-icon.arco-btn-outline,
+.arco-btn-size-medium.arco-btn-only-icon.arco-btn-dashed {
+  width: auto;
+  min-width: 0;
+  padding-left: 15px;
+  padding-right: 15px;
+}
+
+/* small：Button / Select / Radio-group 统一 26px（见 global --gpt-control-height-sm） */
+.arco-btn-size-small {
+  height: var(--gpt-control-height-sm);
+}
+
+.arco-btn-size-small.arco-btn-only-icon,
+.arco-btn-size-small.arco-btn-shape-circle {
+  width: var(--gpt-control-height-sm);
+  height: var(--gpt-control-height-sm);
+}
+
+/* button 型 radio：外边框分段；未选中透明底，选中色见 arco-theme */
 .arco-radio-group-button {
-  background-color: var(--grey-bg-color);
+  --radio-border: var(--gpt-border-strong);
+
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
+  background-color: transparent;
+  border: none;
+  border-radius: var(--gpt-radius-sm);
+  box-shadow: none;
+
+  .arco-radio-button {
+    position: relative;
+    z-index: 0;
+    box-sizing: border-box;
+    height: 100%;
+    margin: 0 0 0 -1px;
+    border: 1px solid var(--radio-border);
+    border-radius: 0;
+    color: var(--gpt-text-secondary);
+    background-color: transparent;
+
+    &::before {
+      display: none;
+    }
+
+    &:first-of-type {
+      margin-left: 0;
+      border-radius: var(--gpt-radius-sm) 0 0 var(--gpt-radius-sm);
+    }
+
+    &:last-of-type {
+      border-radius: 0 var(--gpt-radius-sm) var(--gpt-radius-sm) 0;
+    }
+
+    &:not(.arco-radio-checked):not(.arco-radio-disabled):hover {
+      z-index: 1;
+      border-color: var(--gpt-main-purple);
+      color: var(--gpt-main-purple);
+      background-color: transparent;
+    }
+  }
+
+  .arco-radio-button-content {
+    box-sizing: border-box;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+  }
+
   .arco-radio-button.arco-radio-checked {
-    color: var(--brand-color);
+    z-index: 2;
+    color: var(--gpt-text-inverse);
+    background-color: var(--gpt-main-dark);
+    border-color: var(--gpt-main-dark);
+
+    &:not(.arco-radio-disabled):hover {
+      color: var(--gpt-text-inverse);
+      background-color: var(--gpt-main-purple);
+      border-color: var(--gpt-main-purple);
+    }
+  }
+}
+
+.arco-radio-group-size-small.arco-radio-group-button {
+  height: var(--gpt-control-height-sm);
+}
+
+.arco-radio-group-size-medium.arco-radio-group-button {
+  height: var(--gpt-control-height-md);
+}
+
+/*
+ * Compact toolbar buttons — Logs time-range pagination, etc.
+ * Visual spec matches paginated-data-table .arco-pagination-item (Table Query).
+ */
+.arco-btn-text.gpt-btn-toolbar,
+.arco-btn-size-small.gpt-btn-toolbar:not(.arco-btn-only-icon) {
+  padding: var(--gpt-gap-xs) var(--gpt-gap-md);
+  border-radius: var(--gpt-radius-sm);
+  min-height: var(--gpt-control-height-sm);
+  line-height: 1.4;
+  color: var(--gpt-text-secondary);
+  font-weight: var(--gpt-font-weight-control);
+  background-color: transparent;
+
+  &:hover:not(:disabled):not(.active):not(.arco-btn-disabled) {
+    color: var(--gpt-brand-900);
+    background-color: var(--gpt-nav-active-bg);
+  }
+
+  &.active,
+  &.active:hover {
+    color: var(--gpt-text-inverse);
+    background-color: var(--gpt-brand-900);
+    font-weight: 500;
+  }
+}
+
+.gpt-btn-toolbar-mono {
+  font-family: var(--font-mono);
+}
+
+/* outline 图标按钮：与相邻 input/select hover 一致（filter +/- 等） */
+.arco-btn-outline.gpt-btn-outline-control {
+  flex-shrink: 0;
+
+  &:hover:not(:disabled):not(.arco-btn-disabled) {
+    color: var(--gpt-main-dark);
+    background-color: var(--grey-bg-color);
+    border-color: var(--gpt-main-dark);
   }
 }

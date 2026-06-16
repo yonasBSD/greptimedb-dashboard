@@ -16,17 +16,18 @@ a-layout-header
         :config="config"
       )
 a-layout-content.main-content
-  a-card.light-editor-card(:bordered="false")
-    CodeMirror(
-      v-model="content"
-      :placeholder="config.placeholder"
-      :extensions="extensions"
-      :style="style"
-      :spellcheck="true"
-      :autofocus="true"
-      :indent-with-tab="true"
-      :tabSize="2"
-    )
+  a-card.editor-card.gpt-light-editor-card(:bordered="false")
+    .full-width-height-editor.card-editor.gpt-light-editor.gpt-square-editor
+      CodeMirror(
+        v-model="content"
+        :placeholder="config.placeholder"
+        :extensions="extensions"
+        :style="{ width: '100%', height: '100%' }"
+        :spellcheck="true"
+        :autofocus="true"
+        :indent-with-tab="true"
+        :tabSize="2"
+      )
 
 a-drawer.ingest(
   v-if="config.hasDoc"
@@ -43,7 +44,6 @@ a-drawer.ingest(
   import { Codemirror as CodeMirror } from 'vue-codemirror'
   import { basicSetup } from 'codemirror'
   import { json } from '@codemirror/lang-json'
-  import type { Log } from '@/store/modules/log/types'
 
   const props = defineProps({
     config: {
@@ -52,14 +52,11 @@ a-drawer.ingest(
     },
   })
 
-  const route = useRoute()
-  const { pushLog } = useLog(route)
-  const { activeTab, footer } = storeToRefs(useIngestStore())
+  const { activeTab } = storeToRefs(useIngestStore())
 
   const loading = ref(false)
   const content = ref('')
   const docVisible = ref(false)
-  const style = { height: '100%' }
 
   const extensions = computed(() => {
     const contentType = props.config?.params?.contentType
@@ -85,48 +82,41 @@ a-drawer.ingest(
     loading.value = true
     const result = await props.config.submitHandler(content.value, props.config.params)
 
-    let log: Log
     if (Reflect.has(result, 'error')) {
-      log = {
-        type: props.config.tabKey,
-        codeInfo: '',
-        message: '',
-        error: result.error,
-        startTime: result.startTime,
-      }
-    } else {
-      log = {
-        type: props.config.tabKey,
-        codeInfo: '',
-        message: 'Data written',
-        startTime: result.startTime,
-        networkTime: result.networkTime,
-      }
+      // TODO: show error notification when ingest submit fails
     }
-
-    pushLog(log, props.config.tabKey)
-    footer.value[activeTab.value] = false
     loading.value = false
   }
 </script>
 
 <style lang="less" scoped>
+  .main-content {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+
+    .editor-card {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+
   .ingest {
     :deep(.arco-drawer-header) {
       display: none;
     }
 
     :deep(.arco-drawer-body) {
-      font-size: 14px;
-      color: var(--main-font-color);
-      padding: 24px;
+      font-size: var(--gpt-font-lg);
+      color: var(--gpt-text-primary);
+      padding: var(--gpt-gap-xl);
       display: flex;
       flex-direction: column;
       line-height: 24px;
     }
 
     .markdown-container {
-      margin-bottom: 30px;
+      margin-bottom: var(--gpt-gap-xl);
     }
   }
 </style>

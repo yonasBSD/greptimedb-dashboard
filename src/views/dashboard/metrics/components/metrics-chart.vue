@@ -8,6 +8,7 @@ a-card.metrics-chart(:bordered="false")
             v-model:time-length="time"
             v-model:time-range="rangeTime"
             button-type="outline"
+            button-size="small"
             :show-any-time="false"
           )
           StepSelector(
@@ -18,14 +19,30 @@ a-card.metrics-chart(:bordered="false")
 
     a-space(style="margin-left: auto")
       a-checkbox(v-model="showFullSeriesName") {{ t('metrics.showFullSeriesName') }}
-      a-radio-group(v-model="localChartType" type="button" size="small")
-        a-radio(value="line") Lines
-        a-radio(value="bar") Bars
-        a-radio(value="scatter") Points
-        a-radio(value="stacked-line") Stacked Lines
+      a-radio-group.chart-type-toggle(v-model="localChartType" type="button" size="small")
+        a-radio(value="line")
+          span.chart-type-option
+            svg.icon-16
+              use(href="#line")
+            span.chart-type-label Lines
+        a-radio(value="bar")
+          span.chart-type-option
+            svg.icon-16
+              use(href="#bar")
+            span.chart-type-label Bars
+        a-radio(value="scatter")
+          span.chart-type-option
+            svg.icon-16
+              use(href="#point")
+            span.chart-type-label Points
+        a-radio(value="stacked-line")
+          span.chart-type-option
+            svg.icon-16
+              use(href="#stack")
+            span.chart-type-label Stacked Lines
 
   .chart-section(v-if="hasData")
-    .chart-container(style="padding: 24px 0")
+    .chart-container(ref="chartContainerRef")
       Chart(
         :key="chartKey"
         ref="chartRef"
@@ -43,13 +60,13 @@ a-card.metrics-chart(:bordered="false")
 </template>
 
 <script setup lang="ts">
-  import { ref, computed, watch, nextTick, inject, type Ref, type ComputedRef } from 'vue'
-  import { useWindowSize } from '@vueuse/core'
+  import { ref, computed, watch, inject } from 'vue'
+  import { useElementSize } from '@vueuse/core'
   import Chart from '@/components/raw-chart/index.vue'
   import TimeRangeSelect from '@/components/time-range-select/index.vue'
+  import chartTheme from '@/components/chart/chartTheme.json'
   import { useDateTimeFormat } from '@/hooks'
 
-  import dayjs from 'dayjs'
   import type { EChartsOption } from 'echarts'
   import { useI18n } from 'vue-i18n'
   import StepSelector from './step-selector.vue'
@@ -74,13 +91,40 @@ a-card.metrics-chart(:bordered="false")
 
   const { t } = useI18n()
 
-  // Use timezone-aware date formatting
   const { formatDateTime } = useDateTimeFormat()
 
-  const chartRef = ref()
-  const localChartType = chartType
+  const METRICS_CHART_COLORS = chartTheme.color as string[]
+  /** Fixed height of the line/bar plot area (excluding legend). */
+  const GRAPH_HEIGHT = 400
+  const LEGEND_ITEM_HEIGHT = 14
+  const LEGEND_ITEM_GAP = 10
+  const LEGEND_LIST_ROW_HEIGHT = LEGEND_ITEM_HEIGHT + 6
+  const LEGEND_LIST_PAGER_HEIGHT = 16
+  const LEGEND_ICON_WIDTH = 14
+  const LEGEND_CHAR_WIDTH = 6.5
+  const LEGEND_TO_GRID_GAP = 16
+  /** Space between legend block and canvas bottom */
+  const LEGEND_BOTTOM_INSET = 12
+  /** Above this count, legend uses a single-column list at the bottom */
+  const LEGEND_LIST_THRESHOLD = 5
+  const LEGEND_LIST_MAX_VISIBLE_ROWS = 8
+  const AXIS_LABEL_STYLE = { color: 'rgba(71, 52, 96, 0.45)', fontSize: 11 }
+  const SPLIT_LINE_STYLE = { type: 'solid' as const, color: 'rgba(71, 52, 96, 0.06)' }
+  const AXIS_LINE_STYLE = { lineStyle: { color: 'rgba(71, 52, 96, 0.12)' } }
 
-  const { height: windowHeight } = useWindowSize()
+  const formatMetricValue = (value: number): string => {
+    if (!Number.isFinite(value)) return String(value)
+    if (Number.isInteger(value)) return String(value)
+    if (Math.abs(value) >= 1e6 || (Math.abs(value) > 0 && Math.abs(value) < 1e-4)) {
+      return value.toExponential(3)
+    }
+    return String(Number(value.toPrecision(6)))
+  }
+
+  const chartRef = ref()
+  const chartContainerRef = ref<HTMLElement>()
+  const { width: chartContainerWidth } = useElementSize(chartContainerRef)
+  const localChartType = chartType
 
   watch(
     () => JSON.stringify({ time: time.value, rangeTime: rangeTime.value, step: currentStep.value }),
@@ -100,10 +144,6 @@ a-card.metrics-chart(:bordered="false")
         return 'line'
     }
   }
-
-  const chartKey = computed(() => {
-    return query.value + step.value
-  })
 
   const handleDataZoom = (event: any) => {
     if (!event.batch || !event.batch[0]) return
@@ -167,24 +207,74 @@ a-card.metrics-chart(:bordered="false")
     return filteredData
   })
 
-  const graphHeight = 530
-  const legendGap = 30
-  const legendItemHeight = 15
-  const legendItemGap = 8
-  const legendHeight = computed(() => {
-    const seriesCount = seriesData.value.length
-    if (seriesCount === 0) return 0
-
-    // Calculate height including itemGap: each item needs height + gap (except last item)
-    const calculatedHeight = seriesCount * legendItemHeight + (seriesCount - 1) * (legendItemGap * 0.67)
-    return calculatedHeight
-  })
-  const chartHeight = computed(() => {
-    const baseHeight = graphHeight
-    const dynamicHeight = legendHeight.value
-    return baseHeight + dynamicHeight + legendGap
-  })
   const showFullSeriesName = ref(false)
+
+  const chartKey = computed(() => {
+    return `${query.value}-${step.value}-${showFullSeriesName.value}`
+  })
+
+  const formatChartAxisTime = (value: number): string => {
+    const range = timeRange.value as [number, number] | undefined
+    if (!range || range.length !== 2) {
+      return formatDateTime(value, 'TimestampMillisecond', 'HH:mm:ss') ?? ''
+    }
+    const spanMs = (range[1] - range[0]) * 1000
+    const oneDay = 86400 * 1000
+    const oneHour = 3600 * 1000
+    if (spanMs > oneDay * 7) {
+      return formatDateTime(value, 'TimestampMillisecond', 'MM-DD') ?? ''
+    }
+    if (spanMs > oneDay) {
+      return formatDateTime(value, 'TimestampMillisecond', 'MM-DD HH:mm') ?? ''
+    }
+    if (spanMs > oneHour) {
+      return formatDateTime(value, 'TimestampMillisecond', 'HH:mm') ?? ''
+    }
+    return formatDateTime(value, 'TimestampMillisecond', 'HH:mm:ss') ?? ''
+  }
+
+  const estimateLegendAreaHeight = (
+    count: number,
+    avgNameLength: number,
+    containerWidth: number,
+    listLayout: boolean,
+    listMaxVisibleRows = LEGEND_LIST_MAX_VISIBLE_ROWS
+  ) => {
+    if (count === 0) return 0
+
+    if (listLayout) {
+      const visibleRows = Math.min(count, listMaxVisibleRows)
+      const pagerHeight = count > listMaxVisibleRows ? LEGEND_LIST_PAGER_HEIGHT : 0
+      return visibleRows * LEGEND_LIST_ROW_HEIGHT + pagerHeight + 8 + LEGEND_BOTTOM_INSET
+    }
+
+    const maxWidth = Math.max(containerWidth * 0.92 - 24, 240)
+    const itemWidth = avgNameLength * LEGEND_CHAR_WIDTH + LEGEND_ICON_WIDTH + LEGEND_ITEM_GAP
+    const itemsPerRow = Math.max(1, Math.floor(maxWidth / itemWidth))
+    const rows = Math.ceil(count / itemsPerRow)
+    return rows * LEGEND_ITEM_HEIGHT + Math.max(0, rows - 1) * LEGEND_ITEM_GAP + 8
+  }
+
+  const seriesCount = computed(() => seriesData.value.length)
+
+  const useLegendListLayout = computed(() => seriesCount.value >= LEGEND_LIST_THRESHOLD)
+
+  const avgLegendNameLength = computed(() => (showFullSeriesName.value ? 56 : 28))
+
+  const listLegendVisibleRows = computed(() => Math.min(seriesCount.value, LEGEND_LIST_MAX_VISIBLE_ROWS))
+
+  const legendAreaHeight = computed(() =>
+    estimateLegendAreaHeight(
+      seriesCount.value,
+      avgLegendNameLength.value,
+      chartContainerWidth.value || 900,
+      useLegendListLayout.value,
+      LEGEND_LIST_MAX_VISIBLE_ROWS
+    )
+  )
+
+  /** Plot area fixed; legend height is additive below the grid. */
+  const chartHeight = computed(() => GRAPH_HEIGHT + legendAreaHeight.value + LEGEND_TO_GRID_GAP)
   const chartOption = computed<EChartsOption>(() => {
     if (!hasData.value) return {}
     // Option: control whether to display full series name or compact unique-label name
@@ -207,27 +297,24 @@ a-card.metrics-chart(:bordered="false")
       fullNamesInOrder.push(labelStr ? `${metricName}{${labelStr}}` : metricName)
     })
 
-    // Precompute which label keys actually differ across series
+    // Label keys whose values differ across series (shared labels are hidden in compact mode)
     const differingKeys = (() => {
       const totalSeries = labelMapsInOrder.length
-      // collect union of all label keys across series
+      if (totalSeries <= 1) return new Set<string>()
+
       const allKeys = new Set<string>()
       labelMapsInOrder.forEach((lm) => {
         Object.keys(lm).forEach((k) => allKeys.add(k))
       })
 
       const diff = new Set<string>()
-      // for each key, collect values across all series; treat missing as a distinct sentinel
       allKeys.forEach((key) => {
         const values = new Set<string>()
         labelMapsInOrder.forEach((lm) => {
           const v = lm[key]
           values.add(v === undefined ? '__MISSING__' : String(v))
         })
-        // values.size > 1 means at least 2 series have different values for this key
-        if (totalSeries === 1 || values.size > 1) {
-          diff.add(key)
-        }
+        if (values.size > 1) diff.add(key)
       })
       return diff
     })()
@@ -259,8 +346,9 @@ a-card.metrics-chart(:bordered="false")
       const shouldShowSymbols = localChartType.value === 'scatter' || data.length <= 20
       let symbolSize = 0
       if (shouldShowSymbols) {
-        symbolSize = localChartType.value === 'scatter' ? 6 : 5
+        symbolSize = localChartType.value === 'scatter' ? 6 : 4
       }
+      const stacked = isStackedChart(localChartType.value)
 
       return {
         name: getSeriesName(index),
@@ -268,58 +356,136 @@ a-card.metrics-chart(:bordered="false")
         data,
         smooth: false,
         symbol: shouldShowSymbols ? 'circle' : 'none',
-        symbolSize: 5,
+        symbolSize,
+        ...(stacked ? { stack: 'total' } : {}),
         lineStyle:
           localChartType.value === 'scatter'
             ? undefined
             : {
-                width: 1.5,
-                color: undefined,
-                opacity: 1,
+                width: 2,
               },
         emphasis: {
           focus: 'series',
           lineStyle: {
-            width: 2,
-            opacity: 1,
+            width: 2.5,
           },
         },
         connectNulls: false,
-        areaStyle: isStackedChart(localChartType.value)
+        areaStyle: stacked
           ? {
-              opacity: 0.6,
+              opacity: 0.35,
             }
           : undefined,
       }
     })
 
+    const legendNames = series.map((s) => s.name as string)
+    const listLayout = useLegendListLayout.value
+    const listVisibleRows = listLegendVisibleRows.value
+    const legendRows = estimateLegendAreaHeight(
+      legendNames.length,
+      avgLegendNameLength.value,
+      chartContainerWidth.value || 900,
+      listLayout,
+      LEGEND_LIST_MAX_VISIBLE_ROWS
+    )
+    const gridBottom = legendRows + LEGEND_TO_GRID_GAP
+    const useLegendScroll =
+      (!listLayout && legendNames.length > 14) || (listLayout && legendNames.length > LEGEND_LIST_MAX_VISIBLE_ROWS)
+
+    const legendTextStyle = {
+      fontSize: 11,
+      lineHeight: LEGEND_ITEM_HEIGHT,
+      color: 'rgba(71, 52, 96, 0.65)',
+    }
+
+    const listLegendWidth = Math.min(
+      (chartContainerWidth.value || 900) * 0.92,
+      Math.max(...legendNames.map((name) => name.length * LEGEND_CHAR_WIDTH + LEGEND_ICON_WIDTH + 20), 120)
+    )
+
+    const listLegendBlockHeight =
+      listVisibleRows * LEGEND_LIST_ROW_HEIGHT + (useLegendScroll ? LEGEND_LIST_PAGER_HEIGHT : 0)
+
+    const legendOption = listLayout
+      ? {
+          type: useLegendScroll ? 'scroll' : 'plain',
+          orient: 'vertical',
+          left: 'center',
+          bottom: LEGEND_BOTTOM_INSET,
+          width: listLegendWidth,
+          height: Math.max(listLegendBlockHeight, LEGEND_LIST_ROW_HEIGHT),
+          itemWidth: LEGEND_ICON_WIDTH,
+          itemHeight: LEGEND_ITEM_HEIGHT,
+          itemGap: 6,
+          textStyle: legendTextStyle,
+          ...(useLegendScroll
+            ? {
+                pageIconSize: 10,
+                pageTextStyle: { fontSize: 10, color: 'rgba(71, 52, 96, 0.45)' },
+              }
+            : {}),
+        }
+      : {
+          type: useLegendScroll ? 'scroll' : 'plain',
+          orient: 'horizontal',
+          bottom: 0,
+          left: 'center',
+          width: '92%',
+          itemWidth: LEGEND_ICON_WIDTH,
+          itemHeight: 10,
+          itemGap: LEGEND_ITEM_GAP,
+          textStyle: legendTextStyle,
+        }
+
     return {
+      color: METRICS_CHART_COLORS,
       tooltip: {
         trigger: 'axis',
         confine: true,
+        appendToBody: true,
         enterable: false,
-        formatter: (params: any[]) => {
-          if (!params || params.length === 0) return ''
-          let content = `<div style="margin-bottom: 8px; font-weight: 600; color: #333;">${
-            formatDateTime(params[0].value[0], 'TimestampMillisecond') ?? ''
-          }</div>`
+        axisPointer: {
+          type: 'line',
+          lineStyle: {
+            color: 'rgba(112, 47, 237, 0.35)',
+            type: 'dashed',
+          },
+        },
+        formatter: (params: any) => {
+          const items = Array.isArray(params) ? params : [params]
+          if (!items.length) return ''
+          const timeValue = items[0].value?.[0] ?? items[0].axisValue
+          let content = `<div style="margin-bottom: 6px; font-weight: 600; font-size: 12px;">${formatChartAxisTime(
+            timeValue
+          )}</div>`
 
-          params.forEach((param) => {
+          const sorted = [...items].sort((a, b) => {
+            const av = a.value?.[1]
+            const bv = b.value?.[1]
+            if (av == null && bv == null) return 0
+            if (av == null) return 1
+            if (bv == null) return -1
+            return Number(bv) - Number(av)
+          })
+
+          sorted.forEach((param) => {
             const {
               color,
-              seriesIndex: sIdx,
               value: [, value],
-              seriesName,
+              seriesIndex,
             } = param
             if (value === null || value === undefined) return
 
-            const displayName = seriesName
+            const tooltipName = fullNamesInOrder[seriesIndex] ?? param.seriesName
 
             content += `
-              <div style="margin: 2px 0;">
-                <span style="display: inline-block; width: 10px; height: 10px; background: ${color}; border-radius: 50%; margin-right: 8px;"></span>
-                <span style="font-weight: 500;">${displayName}:</span>
-                <span style="float: right; margin-left: 20px;">${value}</span>
+              <div style="margin: 2px 0; font-size: 12px; line-height: 1.4;">
+                <span style="display: inline-block; width: 8px; height: 8px; background: ${color}; border-radius: 50%; margin-right: 6px;"></span>
+                <span>${tooltipName}:</span>
+                <span style="float: right; margin-left: 16px; font-variant-numeric: tabular-nums;">${formatMetricValue(
+                  Number(value)
+                )}</span>
               </div>
             `
           })
@@ -327,124 +493,67 @@ a-card.metrics-chart(:bordered="false")
           return content
         },
       },
-      legend: {
-        bottom: 0,
-        orient: 'vertical',
-        top: graphHeight + 20,
-        itemHeight: legendItemHeight,
-        itemGap: legendItemGap,
-      },
+      legend: legendOption,
       grid: {
-        left: 30,
-        right: 30,
-        bottom: legendHeight.value + legendGap,
-        top: 30,
+        left: 0,
+        right: 0,
+        top: 8,
+        bottom: gridBottom,
         containLabel: true,
       },
       dataZoom: [
         {
           type: 'inside',
           xAxisIndex: 0,
-          yAxisIndex: 'none',
+          filterMode: 'none',
           zoomOnMouseWheel: false,
           moveOnMouseWheel: false,
           moveOnMouseMove: true,
-          preventDefaultMouseMove: false,
-          preventDefaultMouseWheel: false,
         },
       ],
-      toolbox: {
-        orient: 'vertical',
-        itemSize: 15,
-        top: -115,
-        right: -1115,
-        feature: {
-          dataZoom: {
-            yAxisIndex: 'none',
-            title: {
-              zoom: 'Zoom',
-              back: 'Reset',
-            },
-          },
-        },
-      },
-
       xAxis: {
         type: 'time',
         axisLine: {
           show: true,
+          ...AXIS_LINE_STYLE,
         },
         axisTick: {
-          show: true,
-          lineStyle: {
-            width: 1,
-          },
+          show: false,
         },
         axisLabel: {
-          formatter: (value: number) => {
-            return formatDateTime(value, 'TimestampMillisecond') ?? String(value)
-          },
+          ...AXIS_LABEL_STYLE,
+          hideOverlap: true,
+          formatter: (value: number) => formatChartAxisTime(value),
         },
         axisPointer: {
           label: {
-            formatter: (params: any) => {
-              const { value } = params
-              return formatDateTime(value, 'TimestampMillisecond') ?? String(value)
-            },
+            ...AXIS_LABEL_STYLE,
+            formatter: (params: any) => formatChartAxisTime(params.value),
           },
         },
         splitLine: {
           show: true,
-          lineStyle: {
-            type: 'dashed',
-          },
+          lineStyle: SPLIT_LINE_STYLE,
         },
       },
       yAxis: {
         type: 'value',
-        min: (value: any) => {
-          let minValue = Infinity
-          series.forEach((s) => {
-            if (s.data && Array.isArray(s.data)) {
-              s.data.forEach((point: any) => {
-                if (point && point[1] !== null && point[1] !== undefined) {
-                  minValue = Math.min(minValue, point[1])
-                }
-              })
-            }
-          })
-          return Math.floor(minValue * 0.999)
-        },
-        max: (value: any) => {
-          let maxValue = -Infinity
-          series.forEach((s) => {
-            if (s.data && Array.isArray(s.data)) {
-              s.data.forEach((point: any) => {
-                if (point && point[1] !== null && point[1] !== undefined) {
-                  maxValue = Math.max(maxValue, point[1])
-                }
-              })
-            }
-          })
-          return Math.ceil(maxValue * 1.001)
-        },
+        scale: !isStackedChart(localChartType.value),
+        min: isStackedChart(localChartType.value) ? 0 : undefined,
         axisLine: {
           show: true,
+          ...AXIS_LINE_STYLE,
         },
         axisTick: {
-          show: true,
-          lineStyle: {
-            width: 1,
-          },
+          show: false,
         },
         axisLabel: {
-          color: 'var(--color-text-secondary)',
+          ...AXIS_LABEL_STYLE,
+          formatter: (value: number) => formatMetricValue(value),
         },
         splitLine: {
           show: true,
-          lineStyle: {
-            type: 'dashed' as const,
-          },
+          lineStyle: SPLIT_LINE_STYLE,
         },
       },
       series,
@@ -455,7 +564,118 @@ a-card.metrics-chart(:bordered="false")
 </script>
 
 <style lang="less" scoped>
+  .chart-type-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+
+    svg {
+      flex-shrink: 0;
+      color: currentColor;
+    }
+  }
+
+  .chart-type-label {
+    font-size: var(--gpt-font-sm);
+    white-space: nowrap;
+  }
+
   .metrics-chart {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+
+    :deep(.arco-card-body) {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    .section-title {
+      flex: 0 0 auto;
+    }
+
+    .chart-section {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+    }
+
+    .chart-container {
+      flex: 0 0 auto;
+    }
+
+    :deep(.chart-type-toggle.arco-radio-group-button) {
+      height: var(--gpt-control-height-sm);
+      padding: 0;
+      overflow: visible;
+      background: var(--gpt-bg-panel);
+      border: 1px solid var(--gpt-border-strong);
+      border-radius: var(--gpt-radius-sm);
+      box-shadow: none;
+
+      .arco-radio-button {
+        position: relative;
+        z-index: 0;
+        height: 100%;
+        margin: 0;
+        border: none;
+        border-radius: var(--gpt-radius-sm);
+        color: var(--gpt-text-secondary);
+
+        &::before {
+          display: none;
+        }
+
+        &:first-of-type,
+        &:last-of-type {
+          border-radius: var(--gpt-radius-sm);
+        }
+
+        &:not(.arco-radio-checked):not(.arco-radio-disabled):hover {
+          z-index: 1;
+          color: var(--gpt-text-primary);
+          background: var(--grey-bg-color);
+        }
+      }
+
+      .arco-radio-button-content {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+      }
+
+      .arco-radio-button.arco-radio-checked {
+        z-index: 2;
+        color: var(--brand-color);
+        background: var(--light-brand-color);
+        border: none;
+
+        &::after {
+          content: '';
+          position: absolute;
+          right: 0px;
+          bottom: 0px;
+          left: 0px;
+          height: 2px;
+          background: var(--brand-color);
+          border-radius: 1px;
+        }
+      }
+    }
+
+    :deep(.section-title) {
+      border-bottom: none;
+    }
+
+    .chart-container {
+      padding: var(--gpt-gap-md) var(--gpt-page-padding-x) var(--gpt-gap-lg);
+    }
+
     .empty-state {
       text-align: center;
       padding: 60px 20px;
@@ -469,16 +689,6 @@ a-card.metrics-chart(:bordered="false")
       }
     }
 
-    :deep(.echarts-toolbox) {
-      display: none !important;
-      visibility: hidden !important;
-      opacity: 0 !important;
-      pointer-events: none !important;
-    }
-
-    :deep([class*='toolbox']) {
-      display: none !important;
-    }
     :deep(.echarts-toolbox),
     :deep(.ec-toolbox),
     :deep([class*='ec-toolbox']),
@@ -491,9 +701,5 @@ a-card.metrics-chart(:bordered="false")
       height: 0 !important;
       overflow: hidden !important;
     }
-  }
-  .series-count {
-    text-align: center;
-    color: var(--color-text-secondary);
   }
 </style>

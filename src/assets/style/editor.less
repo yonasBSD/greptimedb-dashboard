@@ -1,19 +1,4 @@
 .editor-card {
-  .ͼo {
-    background: var(--main-font-color);
-    font-size: 12px;
-
-    .cm-gutters {
-      color: #fdfcff;
-      background-color: transparent;
-      border-right: 1px solid var(--hover-brand-color);
-      opacity: 0.6;
-    }
-
-    .cm-activeLine {
-      background-color: var(--editor-active-line-color);
-    }
-  }
   .ͼ1 .cm-content {
     padding: 10px 0 !important;
     width: calc(100% - 33px);
@@ -22,14 +7,135 @@
 
   .ͼ1 .cm-line {
     padding: 0 8px;
-  }
-
-  .ͼ1.cm-editor {
-    border-radius: 6px;
+    line-height: var(--gpt-editor-line-height);
   }
 
   .ͼ1.cm-editor.cm-focused {
     outline: 0;
+  }
+}
+
+/* 浅色 CodeMirror：Query / Ingest 等全站编辑器 */
+.gpt-light-editor {
+  .ͼo {
+    background: var(--gpt-bg-code);
+    font-size: var(--gpt-font-base);
+
+    .cm-gutters {
+      background: var(--gpt-bg-code-gutter);
+      color: var(--gpt-text-secondary);
+      border-right: 1px solid var(--gpt-border-default);
+    }
+  }
+
+  .cm-editor,
+  .ͼ1.cm-editor {
+    background: var(--gpt-bg-code);
+    color: var(--gpt-text-primary);
+    border: none;
+  }
+
+  /* 圆角：边框画在 cm-editor 上，overflow 裁剪 gutter，避免左角「断点」 */
+  &:not(.gpt-square-editor) {
+    .cm-editor,
+    .ͼ1.cm-editor {
+      border: 1px solid var(--gpt-editor-border);
+      border-radius: var(--gpt-radius-sm);
+      overflow: hidden;
+    }
+
+    .cm-gutters,
+    .ͼ1 .cm-gutters,
+    .ͼo .cm-gutters {
+      border-top-left-radius: var(--gpt-radius-sm);
+      border-bottom-left-radius: var(--gpt-radius-sm);
+      border-right: 1px solid var(--gpt-border-default);
+    }
+  }
+
+  .cm-editor.cm-focused,
+  .ͼ1.cm-editor.cm-focused {
+    outline: 0;
+  }
+
+  .cm-activeLine,
+  .ͼ1 .cm-activeLine {
+    background: var(--gpt-nav-active-bg);
+  }
+
+  .cm-gutters,
+  .ͼ1 .cm-gutters {
+    background: var(--gpt-bg-code-gutter);
+    color: var(--gpt-text-secondary);
+    border-right: 1px solid var(--gpt-border-default);
+  }
+
+  .cm-gutter,
+  .cm-lineNumbers,
+  .cm-gutterElement {
+    background: var(--gpt-bg-code-gutter);
+    color: var(--gpt-text-secondary);
+  }
+
+  .cm-activeLineGutter {
+    background: var(--gpt-nav-active-bg);
+  }
+
+  .cm-cursor,
+  .cm-dropCursor {
+    border-left-color: var(--gpt-text-primary) !important;
+  }
+
+  .cm-content {
+    caret-color: var(--gpt-text-primary);
+    line-height: var(--gpt-editor-line-height);
+  }
+
+  .cm-line {
+    line-height: var(--gpt-editor-line-height);
+  }
+
+  .cm-gutterElement,
+  .cm-lineNumbers .cm-gutterElement {
+    line-height: var(--gpt-editor-line-height);
+  }
+
+  &.cm-focused .cm-selectionBackground,
+  & .cm-selectionBackground {
+    background: var(--gpt-bg-code-selection) !important;
+  }
+}
+
+// Square corners (no radius). Add to the editor container alongside full-width-height-editor.
+.gpt-square-editor {
+  &.card-editor,
+  &.full-width-height-editor.card-editor {
+    border-radius: 0;
+  }
+
+  .cm-editor,
+  .ͼ1.cm-editor {
+    border: none !important;
+    border-radius: 0;
+  }
+
+  .cm-gutters,
+  .ͼ1 .cm-gutters {
+    border-right: 1px solid var(--gpt-border-default);
+  }
+}
+
+.gpt-light-editor-card {
+  height: 100%;
+  border-radius: 0;
+
+  &.gpt-code-editor-frame {
+    border-radius: var(--gpt-radius-sm);
+  }
+
+  > .arco-card-body {
+    height: 100%;
+    padding: 0;
   }
 }
 
@@ -78,9 +184,10 @@
   - .full-width-height-editor.output-editor    - Read-only output editors  
   - .full-width-height-editor.card-editor      - Editors inside cards
   - .full-width-height-editor.pipeline-editor  - Main pipeline editors
-  
+  - .gpt-square-editor                         - Square corners on the container
+
   Example usage:
-  <div class="full-width-height-editor input-editor card-editor">
+  <div class="full-width-height-editor input-editor card-editor gpt-light-editor">
     <CodeMirror />
   </div>
   
@@ -118,6 +225,7 @@
       overflow-wrap: break-word;
       max-width: 100%; // Prevent content from expanding beyond container
       box-sizing: border-box;
+      line-height: var(--gpt-editor-line-height);
     }
 
     // Force individual lines to wrap
@@ -126,15 +234,87 @@
       word-wrap: break-word;
       overflow-wrap: break-word;
       white-space: pre-wrap;
+      line-height: var(--gpt-editor-line-height);
+    }
+
+    .cm-gutterElement {
+      line-height: var(--gpt-editor-line-height);
     }
   }
 
-  .cm-editor {
-    border: 1px solid var(--color-border);
-    border-radius: 2px;
+  &.card-editor {
+    border-radius: var(--gpt-radius-sm);
+  }
+
+  &.gpt-light-editor:not(.gpt-square-editor):not(.pipeline-editor):not(.pipeline-side-editor) {
+    .cm-editor,
+    .ͼ1.cm-editor {
+      background: var(--gpt-bg-code);
+      color: var(--gpt-text-primary);
+      border: 1px solid var(--gpt-editor-border);
+      border-radius: var(--gpt-radius-sm);
+      overflow: hidden;
+    }
+
+    .cm-gutters,
+    .ͼ1 .cm-gutters {
+      border-top-left-radius: var(--gpt-radius-sm);
+      border-bottom-left-radius: var(--gpt-radius-sm);
+      border-right: 1px solid var(--gpt-border-default);
+    }
+  }
+
+  &.gpt-square-editor,
+  &.pipeline-editor,
+  &.pipeline-side-editor {
+    &.card-editor {
+      border-radius: 0;
+    }
+
+    .cm-editor,
+    .ͼ1.cm-editor,
+    .gpt-light-editor .cm-editor,
+    .gpt-light-editor .ͼ1.cm-editor {
+      border: none !important;
+      border-radius: 0;
+    }
+
+    .gpt-light-editor .cm-gutters,
+    .gpt-light-editor .ͼ1 .cm-gutters {
+      border-right: 1px solid var(--gpt-border-default);
+    }
+  }
+
+  // Query：圆角/边框由内部 .cm-editor 统一处理，外层仅裁剪
+  &.query-editor-surface:not(.gpt-square-editor) {
+    border-radius: var(--gpt-radius-sm);
+    overflow: hidden;
+  }
+
+  &.query-editor-surface.gpt-square-editor {
+    border-radius: 0;
+    overflow: hidden;
   }
 }
 
 .ͼ1 .cm-scroller {
   font-family: var(--font-mono);
+}
+
+/* 未包在 full-width-height-editor 内的 CodeMirror（如 SqlTextEditor） */
+.cm-editor .cm-content,
+.cm-editor .cm-line,
+.ͼ1.cm-editor .cm-content,
+.ͼ1.cm-editor .cm-line {
+  line-height: var(--gpt-editor-line-height);
+}
+
+.cm-editor .cm-gutterElement,
+.ͼ1.cm-editor .cm-gutterElement {
+  line-height: var(--gpt-editor-line-height);
+}
+
+.cm-editor .cm-placeholder,
+.ͼ1 .cm-placeholder {
+  color: var(--gpt-placeholder-color);
 }

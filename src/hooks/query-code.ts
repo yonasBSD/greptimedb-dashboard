@@ -1,8 +1,13 @@
-import { useCodeRunStore } from '@/store'
 import { ResultType, PromForm } from '@/store/modules/code-run/types'
 import { TableTreeParent } from '@/store/modules/database/types'
 import { EditorSelection } from '@codemirror/state'
 import { sqlFormatter } from '@/utils/sql'
+import {
+  runCode,
+  refreshResult as refreshCodeRunResult,
+  runWithFormat,
+  type RunCodeAbortKey,
+} from '@/services/code-run'
 import { stringType } from './types'
 
 import useSiderTabs from './sider-tabs'
@@ -13,8 +18,6 @@ const promqlView = shallowRef()
 const queryType = ref('sql')
 const sqlCode = ''
 const promQLCode = ''
-const primaryCodeRunning = ref(false)
-const secondaryCodeRunning = ref(false)
 const cursorAt = ref<Array<number>>([])
 const queryOptions = [
   {
@@ -33,7 +36,6 @@ const codes = ref({
 } as stringType)
 
 export default function useQueryCode() {
-  const { results } = storeToRefs(useCodeRunStore())
   const inputFromNewLineToQueryCode = (code: string, cursorBack: number) => {
     queryType.value = 'sql'
     const { state } = sqlView.value
@@ -86,13 +88,12 @@ export default function useQueryCode() {
     code: string,
     type = queryType.value,
     withoutSave = false,
-    params: PromForm = {} as PromForm
+    params: PromForm = {} as PromForm,
+    abortKey: RunCodeAbortKey = 'run-part'
   ) => {
-    const { pushLog } = useLog()
-    const { runCode } = useCodeRunStore()
-    const res = await runCode(code, type, withoutSave, params)
-    if (!withoutSave && res.log) {
-      pushLog(res.log, type)
+    const res = await runCode(code, type, withoutSave, params, 'result', abortKey)
+    if ((res as { cancelled?: boolean })?.cancelled) {
+      return res
     }
     if (!res.error && type === 'sql') {
       const sql = code
@@ -133,12 +134,8 @@ export default function useQueryCode() {
   }
 
   const explainQuery = async (code: string, type: string) => {
-    const { runCode } = useCodeRunStore()
-    const result = await runCode(code, type, false, {} as PromForm, 'explain')
+    const result = await runCode(code, type, false, {} as PromForm, 'explain', 'explain')
     return result
-  }
-  const getResultsByType = (types: string[]) => {
-    return results.value.filter((item: ResultType) => types.includes(item.type))
   }
 
   const clearCode = () => {
@@ -152,8 +149,7 @@ export default function useQueryCode() {
 
   const exportWithFormat = async (code: string, promForm?: PromForm, format?: string) => {
     try {
-      const { runWithFormat } = useCodeRunStore()
-      const res = await runWithFormat(code, queryType.value, promForm, format)
+      const res: any = await runWithFormat(code, queryType.value, promForm, format)
       return res
     } catch (error) {
       const enhancedError = error instanceof Error ? error : new Error(`Export failed`)
@@ -161,19 +157,12 @@ export default function useQueryCode() {
     }
   }
 
-  const refreshResult = async (key: number | string, type: string, params: PromForm = {} as PromForm) => {
-    const { pushLog } = useLog()
-    const { refreshResult: storeRefreshResult } = useCodeRunStore()
-
-    const res = await storeRefreshResult(key, type, params)
-    if (res.log) {
-      pushLog(res.log, type)
-    }
+  const refreshResult = async (result: ResultType, params: PromForm = {} as PromForm) => {
+    const res = await refreshCodeRunResult(result.query, result.key, result.type, params)
     return res
   }
 
   return {
-    getResultsByType,
     runQuery,
     inputFromNewLineToQueryCode,
     replaceCode,
@@ -184,8 +173,6 @@ export default function useQueryCode() {
     cursorAt,
     queryOptions,
     queryType,
-    primaryCodeRunning,
-    secondaryCodeRunning,
     codes,
     clearCode,
     exportWithFormat,

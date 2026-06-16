@@ -1,37 +1,55 @@
 <template lang="pug">
-a-layout.detail-layout.new-layout
-  a-layout-sider(:resize-directions="['right']" :width="actualSidebarWidth")
-    a-card.perses-sidebar(:bordered="false")
-      template(#title)
-        a-space.space-between(fill style="width: 100%")
-          | {{ $t('menu.dashboard.perses') }}
-          a-button-group
-            a-tooltip(mini position="bottom" :content="$t('common.refresh')")
-              a-button(type="text" size="small" @click="handleRefresh")
+a-layout.detail-layout.new-layout.new-layout--workspace(:class="{ 'is-sidebar-resizing': isSidebarResizing }")
+  a-resize-box(
+    v-model:width="sidebarWidth"
+    :directions="['right']"
+    :style="{ 'min-width': '160px', 'max-width': '40vw', 'flex-shrink': '0' }"
+    @moving-start="onSidebarResizeStart"
+    @moving-end="onSidebarResizeEnd"
+  )
+    a-layout-sider(style="height: 100%" :width="actualSidebarWidth")
+      a-card.gpt-page-sidebar(:bordered="false")
+        template(#title)
+          a-space.space-between(fill style="width: 100%")
+            | {{ $t('menu.dashboard.perses') }}
+            a-button-group
+              a-tooltip(
+                v-if="skillAlertDismissed"
+                mini
+                position="bottom"
+                :content="$t('dashboard.perses.skill.showEntry')"
+              )
+                a-button(type="text" size="small" @click="showSkillAlert")
+                  template(#icon)
+                    svg.icon-16
+                      use(href="#question")
+              a-tooltip(mini position="bottom" :content="$t('common.refresh')")
+                a-button(type="text" size="small" @click="handleRefresh")
+                  template(#icon)
+                    svg.icon-16
+                      use(href="#refresh")
+              a-button(type="text" size="small" @click="openCreateModal")
                 template(#icon)
                   svg.icon-16
-                    use(href="#refresh")
-            a-button(type="text" size="small" @click="openCreateModal")
-              template(#icon)
-                svg.icon-16
-                  use(href="#file-add")
-      a-spin(:loading="isLoading")
-        a-scrollbar
-          a-empty(v-if="!filteredDashboards.length" :description="$t('dashboard.perses.emptySidebar')")
-            template(#image)
-              svg.icon-32
-                use(href="#empty")
-          a-menu(v-model:selected-keys="selectedKeys")
-            a-menu-item(
-              v-for="item in filteredDashboards"
-              :key="item.id"
-              type="text"
-              long
-              style="margin-bottom: 0"
-            )
-              .menu-item
-                span.name {{ item.name }}
-                a-tooltip.menu-item-delete(
+                    use(href="#file-add")
+        a-spin(:loading="isLoading")
+          a-scrollbar.gpt-vertical-scrollbar
+            a-empty(v-if="!filteredDashboards.length" :description="$t('dashboard.perses.emptySidebar')")
+              template(#image)
+                svg.icon-32
+                  use(href="#empty")
+            a-menu.gpt-sidebar-menu(v-model:selected-keys="selectedKeys" mode="vertical" :collapsed="false")
+              a-menu-item(
+                v-for="item in filteredDashboards"
+                :key="item.id"
+                type="text"
+                long
+              )
+                template(#icon)
+                  svg.icon-15
+                    use(href="#details")
+                span.gpt-sidebar-menu-text {{ item.name }}
+                a-tooltip.menu-item-delete.gpt-sidebar-menu-action(
                   v-if="item.id === selectedId"
                   mini
                   position="left"
@@ -43,6 +61,28 @@ a-layout.detail-layout.new-layout
                     @ok="handleDeleteDashboard(item)"
                   )
                     IconDelete.delete-btn
+            .perses-skill-alert-wrap(v-if="!skillAlertDismissed")
+              a-alert.perses-skill-alert(
+                type="info"
+                closable
+                :show-icon="false"
+                @close="dismissSkillAlert"
+              )
+                template(#title)
+                  span {{ $t('dashboard.perses.skill.title') }}
+                .perses-skill-alert__desc {{ $t('dashboard.perses.skill.desc') }}
+                .perses-skill-alert__install
+                  span.perses-skill-alert__label {{ $t('dashboard.perses.skill.installLabel') }}
+                  a-typography-text.perses-skill-alert__command(
+                    copyable
+                    :copy-text="$t('dashboard.perses.skill.installCommand')"
+                  ) {{ $t('dashboard.perses.skill.installCommand') }}
+                .perses-skill-alert__link
+                  a-link(target="_blank" rel="noopener noreferrer" :href="$t('dashboard.perses.skill.installUrl')")
+                    | {{ $t('dashboard.perses.skill.installLinkText') }}
+            .perses-skill-entry-wrap(v-else)
+              a-link.perses-skill-entry(href="#" @click.prevent="showSkillAlert")
+                | {{ $t('dashboard.perses.skill.showEntry') }}
   a-layout-content.layout-content
     a-card.perses-content(:bordered="false")
       template(v-if="selectedDashboard")
@@ -90,7 +130,7 @@ a-layout.detail-layout.new-layout
 </template>
 
 <script lang="ts" setup name="PersesDashboard">
-  import { computed, onMounted, reactive, ref, watch } from 'vue'
+  import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
   import { useStorage } from '@vueuse/core'
   import { storeToRefs } from 'pinia'
   import { Message } from '@arco-design/web-vue'
@@ -111,7 +151,36 @@ a-layout.detail-layout.new-layout
   const route = useRoute()
   const router = useRouter()
   const DASHBOARD_QUERY_KEY = 'dashboard'
-  const sidebarWidth = useStorage('perses-sidebar-width', 280)
+  const sidebarWidthStorage = useStorage('perses-sidebar-width', 228)
+  const skillAlertDismissed = useStorage('perses-skill-alert-dismissed', false)
+  const isSidebarResizing = ref(false)
+
+  const dismissSkillAlert = () => {
+    skillAlertDismissed.value = true
+  }
+
+  const showSkillAlert = () => {
+    skillAlertDismissed.value = false
+  }
+
+  const sidebarWidth = computed({
+    get: () => {
+      const width = Number(sidebarWidthStorage.value)
+      return Number.isFinite(width) ? width : 228
+    },
+    set: (value: number) => {
+      const minWidth = 160
+      const maxWidth = window.innerWidth * 0.4
+      const next = Number(value)
+      sidebarWidthStorage.value = Math.max(minWidth, Math.min(Number.isFinite(next) ? next : 228, maxWidth))
+    },
+  })
+
+  const actualSidebarWidth = computed(() => {
+    const minWidth = 160
+    const maxWidth = window.innerWidth * 0.4
+    return Math.max(minWidth, Math.min(sidebarWidth.value, maxWidth))
+  })
   const searchText = ref('')
   const createModalVisible = ref(false)
   const createForm = reactive({
@@ -162,10 +231,29 @@ a-layout.detail-layout.new-layout
     return dashboards.value.find((item) => item.id === selectedId.value)
   })
 
-  const actualSidebarWidth = computed(() => {
-    const minWidth = 160
-    const maxWidth = window.innerWidth * 0.4
-    return Math.max(minWidth, Math.min(sidebarWidth.value, maxWidth))
+  const clampSidebarWidth = () => {
+    if (sidebarWidth.value < 160) {
+      sidebarWidth.value = 160
+    }
+  }
+
+  watch(sidebarWidthStorage, clampSidebarWidth, { immediate: true })
+
+  const onSidebarResizeEnd = () => {
+    isSidebarResizing.value = false
+    window.removeEventListener('mouseup', onSidebarResizeEnd)
+    window.removeEventListener('blur', onSidebarResizeEnd)
+    clampSidebarWidth()
+  }
+
+  const onSidebarResizeStart = () => {
+    isSidebarResizing.value = true
+    window.addEventListener('mouseup', onSidebarResizeEnd)
+    window.addEventListener('blur', onSidebarResizeEnd)
+  }
+
+  onUnmounted(() => {
+    onSidebarResizeEnd()
   })
 
   const getDashboardNameFromDefinition = (definition: unknown): string | null => {
@@ -414,26 +502,40 @@ a-layout.detail-layout.new-layout
 </script>
 
 <style lang="less" scoped>
+  :deep(.arco-layout-sider-light) {
+    box-shadow: none !important;
+  }
+
+  .new-layout {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    height: 100%;
+    min-height: 0;
+
+    :deep(> .arco-resizebox) {
+      flex: 0 0 auto;
+      height: 100%;
+    }
+
+    > .layout-content {
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+    }
+  }
+
+  .new-layout.is-sidebar-resizing > .layout-content,
+  .new-layout.is-sidebar-resizing :deep(.perses-dashboard-iframe) {
+    pointer-events: none;
+    user-select: none;
+  }
+
   .new-layout > .layout-content {
     overflow-y: hidden;
   }
-  .perses-sidebar {
-    height: 100%;
-  }
 
-  .search-input {
-    margin-bottom: 12px;
-  }
-
-  .perses-sidebar :deep(.arco-card-body) {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .perses-sidebar :deep(.arco-scrollbar) {
-    flex: 1;
-    min-height: 0;
-  }
   .perses-content {
     height: 100%;
   }
@@ -446,10 +548,9 @@ a-layout.detail-layout.new-layout
   }
 
   .empty-state {
-    padding: 24px;
+    padding: var(--gpt-page-padding-y) var(--gpt-page-padding-x);
     max-width: 760px;
     margin: 0 auto;
-    box-sizing: border-box;
   }
 
   .empty-state h3 {
@@ -460,51 +561,95 @@ a-layout.detail-layout.new-layout
 
   .empty-state p {
     margin: 0 0 18px;
-    color: var(--color-text-2);
+    color: var(--gpt-text-secondary);
     line-height: 1.6;
   }
 
-  .learn-more {
-    display: inline-block;
-    margin-top: 12px;
-    font-size: 12px;
-    color: var(--color-text-2);
-    text-decoration: none;
-  }
-
-  .learn-more:hover {
-    color: var(--color-text-1);
-    text-decoration: underline;
-  }
-
-  :deep(.arco-menu-vertical .arco-menu-inner) {
-    padding: 0;
-  }
-
-  :deep(.arco-menu-light .arco-menu-item.arco-menu-selected) {
-    color: var(--brand-color);
-  }
-
-  .menu-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-  }
-
-  .menu-item .name {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
   :deep(.delete-btn) {
-    opacity: 0;
-    transition: opacity 0.15s ease;
+    color: var(--gpt-brand-600);
   }
 
-  :deep(.arco-menu-item:hover) .delete-btn,
-  :deep(.arco-menu-item.arco-menu-selected) .delete-btn {
-    opacity: 1;
+  .perses-skill-alert-wrap {
+    box-sizing: border-box;
+    padding: 12px 12px 0;
+  }
+
+  .perses-skill-entry-wrap {
+    box-sizing: border-box;
+    padding: 12px 12px 0;
+  }
+
+  .perses-skill-entry {
+    display: block;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .perses-skill-alert {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+    padding-right: 32px !important;
+    font-size: 12px;
+    line-height: 1.5;
+
+    :deep(.arco-alert-body) {
+      flex: 1;
+      min-width: 0;
+    }
+
+    :deep(.arco-alert-content) {
+      min-width: 0;
+    }
+
+    :deep(.arco-alert-title) {
+      margin-bottom: 4px;
+      padding-right: 8px;
+    }
+
+    :deep(.arco-alert-close-btn) {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      margin-left: 0;
+    }
+  }
+
+  .perses-skill-alert__desc {
+    margin-bottom: 8px;
+    color: var(--gpt-text-secondary);
+  }
+
+  .perses-skill-alert__install {
+    margin-bottom: 8px;
+  }
+
+  .perses-skill-alert__label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: var(--gpt-text-label);
+  }
+
+  .perses-skill-alert__command {
+    display: block;
+    max-width: 100%;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+
+    :deep(.arco-typography) {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+    }
+  }
+
+  .perses-skill-alert__link {
+    margin-top: 4px;
+
+    :deep(.arco-link) {
+      font-size: 12px;
+    }
   }
 </style>

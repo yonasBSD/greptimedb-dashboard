@@ -83,11 +83,11 @@ a-trigger#time-select(
     },
     buttonType: {
       type: String as PropType<'text' | 'dashed' | 'outline' | 'primary' | 'secondary'>,
-      default: 'text' as const,
+      default: 'outline' as const,
     },
     buttonSize: {
       type: String as PropType<'medium' | 'small' | 'mini' | 'large'>,
-      default: 'medium' as const,
+      default: 'small' as const,
     },
     relativeTimeOptions: {
       type: Array<OptionsType>,
@@ -207,7 +207,7 @@ a-trigger#time-select(
     background-color: var(--card-bg-color);
     box-shadow: 0 1px 10px 0 var(--box-shadow-color);
     padding: 4px 0;
-    border-radius: 4px;
+    border-radius: var(--gpt-radius-sm);
     align-items: flex-start;
   }
 

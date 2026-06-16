@@ -1,6 +1,5 @@
 import editorAPI from '@/api/editor'
 import { SEMANTIC_TYPE_MAP } from '@/views/dashboard/config'
-import { oneDark } from '@codemirror/theme-one-dark'
 import { sql } from '@codemirror/lang-sql'
 import { PromQLExtension } from '@prometheus-io/codemirror-promql'
 import { ScriptTreeData, TableDetail, TableTreeChild, TableTreeParent } from './types'
@@ -11,6 +10,7 @@ const useDataBaseStore = defineStore('database', () => {
   const tablesData = ref<RecordsType>()
   const scriptsData = ref()
   const tablesTreeForDatabase = ref({} as { [key: string]: TableTreeParent[] })
+  const tablesTotalByDatabase = ref<Record<string, number>>({})
   const originTablesTree = computed(() => {
     return tablesTreeForDatabase.value[database.value] || []
   })
@@ -38,12 +38,12 @@ const useDataBaseStore = defineStore('database', () => {
     sql: any[]
     promql: any[]
   }>({
-    sql: [sql(hints.value.sql), oneDark],
-    promql: [new PromQLExtension().asExtension(), oneDark],
+    sql: [sql(hints.value.sql)],
+    promql: [new PromQLExtension().asExtension()],
   })
 
   watch(hints, () => {
-    extensions.value.sql = [sql(hints.value.sql), oneDark]
+    extensions.value.sql = [sql(hints.value.sql)]
     const promql = new PromQLExtension().setComplete({
       remote: {
         fetchFn: () => Promise.reject(),
@@ -52,7 +52,7 @@ const useDataBaseStore = defineStore('database', () => {
         },
       },
     })
-    extensions.value.promql = [promql.asExtension(), oneDark]
+    extensions.value.promql = [promql.asExtension()]
   })
 
   const getIndexesForColumns = (columnSchemas: SchemaType[]) => {
@@ -200,6 +200,7 @@ const useDataBaseStore = defineStore('database', () => {
     tablesTreeForDatabase.value[db] = []
 
     const total = await getTablesCount(db)
+    tablesTotalByDatabase.value = { ...tablesTotalByDatabase.value, [db]: total }
     if (total === 0) {
       tablesLoading.value = false
       totalTablesLoading.value = false
@@ -276,12 +277,18 @@ const useDataBaseStore = defineStore('database', () => {
   }
 
   const resetData = () => {
-    tablesTreeForDatabase.value[database.value] = []
+    const db = database.value
+    tablesTreeForDatabase.value[db] = []
+    if (db) {
+      const { [db]: _removed, ...rest } = tablesTotalByDatabase.value
+      tablesTotalByDatabase.value = rest
+    }
     scriptsData.value = null
   }
 
   return {
     tablesTreeForDatabase,
+    tablesTotalByDatabase,
     originTablesTree,
     originScriptsList,
     tablesLoading,

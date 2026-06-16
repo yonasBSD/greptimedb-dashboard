@@ -1,41 +1,73 @@
 <template lang="pug">
-a-tabs.explain-tabs(lazy-load :animation="true")
-  a-tab-pane(key="explain-grid")
-    template(#title)
-      | {{ $t('dashboard.table') }}
-    a-space(direction="vertical" :size="0")
+.explain-container
+  .explain-toolbar.gpt-results-toolbar
+    .view-switch
+      a-button-group
+        a-button(
+          size="small"
+          type="outline"
+          :title="$t('dashboard.table')"
+          :class="{ active: activeView === 'table' }"
+          @click="activeView = 'table'"
+        )
+          svg.icon-16
+            use(href="#tableview")
+        a-button(
+          size="small"
+          type="outline"
+          :title="$t('dashboard.chart')"
+          :class="{ active: activeView === 'chart' }"
+          @click="activeView = 'chart'"
+        )
+          svg.icon-16
+            use(href="#chart")
+        a-button(
+          size="small"
+          type="outline"
+          :title="$t('dashboard.raw')"
+          :class="{ active: activeView === 'raw' }"
+          @click="activeView = 'raw'"
+        )
+          | RAW
+    .query-display(v-if="props.data?.query")
+      a-popover(
+        trigger="click"
+        position="bl"
+        content-class="code-tooltip"
+        :content="props.data.query"
+      )
+        a-typography-text.query-text(code :ellipsis="{ rows: 1, css: true }") {{ props.data.query }}
+
+    .toolbar-actions(v-if="activeView === 'raw'")
+      a-space(:size="8")
+        a-button(size="mini" type="outline" @click="exportJson")
+          template(#icon)
+            icon-download
+          | {{ $t('dashboard.download') }}
+        TextCopyable(
+          type="outline"
+          size="mini"
+          buttonText
+          :data="formattedRawJson"
+          :show-data="false"
+        )
+
+  .explain-content
+    a-space(v-if="activeView === 'table'" direction="vertical" :size="0")
       ExplainGrid(
         v-for="(stage, index) in stages"
         :key="index"
         :data="stage"
         :index="index"
       )
-  a-tab-pane(key="explain-chart")
-    template(#title)
-      | {{ $t('dashboard.chart') }}
     ExplainChart(
+      v-else-if="activeView === 'chart'"
       :data="stages[activeStageIndex]"
       :index="activeStageIndex"
       :total-stages="stages.length"
       @change-stage="activeStageIndex = $event"
     )
-  a-tab-pane(key="explain-raw")
-    template(#title)
-      | {{ $t('dashboard.raw') }}
-    a-card.raw-json-card(:bordered="false")
-      template(#title)
-        a-space
-          a-button(size="mini" type="outline" @click="exportJson")
-            template(#icon)
-              icon-download
-            | {{ $t('dashboard.download') }}
-          TextCopyable(
-            type="outline"
-            size="mini"
-            buttonText
-            :data="formattedRawJson"
-            :show-data="false"
-          )
+    .raw-json-card(v-else)
       pre.raw-json {{ formattedRawJson }}
 </template>
 
@@ -51,6 +83,7 @@ a-tabs.explain-tabs(lazy-load :animation="true")
     data: ResultType
   }>()
 
+  const activeView = ref<'table' | 'chart' | 'raw'>('table')
   const activeStageIndex = ref(1)
 
   // Process stages from explain result data
@@ -110,73 +143,95 @@ a-tabs.explain-tabs(lazy-load :animation="true")
     () => props.data,
     () => {
       activeStageIndex.value = 1
+      activeView.value = 'table'
     }
   )
 </script>
 
 <style lang="less" scoped>
-  .arco-tabs.explain-tabs {
+  .explain-container {
+    --color-text-2: var(--gpt-text-primary);
     width: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 
-    :deep(.arco-tabs-pane) {
-      height: 100%;
-      overflow: auto;
+    :deep(.arco-icon),
+    :deep(.arco-btn-icon .arco-icon) {
+      color: var(--gpt-text-primary);
+      stroke: currentColor;
     }
-    :deep(.arco-tabs-nav) {
-      .arco-tabs-nav-ink {
-        background-color: var(--brand-color);
+
+    .view-switch :deep(.arco-btn-group .arco-btn-outline:not(.active)) {
+      color: var(--gpt-text-primary);
+
+      &:hover {
+        color: var(--gpt-control-accent-hover);
       }
-      .arco-tabs-tab {
-        padding: 2px 0;
-        &.arco-tabs-tab-active {
-          color: var(--brand-color);
-          font-weight: 600;
+    }
+  }
+
+  .explain-toolbar.gpt-results-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--gpt-border-default);
+    gap: var(--gpt-gap-md);
+
+    .toolbar-actions {
+      flex-shrink: 0;
+    }
+
+    .query-display {
+      flex: 1;
+      margin-right: 6px;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+
+      :deep(.arco-typography.query-text) {
+        margin: 0;
+        white-space: nowrap;
+
+        code {
+          color: var(--gpt-brand-700);
+          background: transparent;
+          border-radius: 0;
+          padding: var(--gpt-gap-xs) var(--gpt-gap-md);
+          font-size: var(--gpt-font-sm);
+          font-family: var(--font-mono);
         }
       }
-      &::before {
-        background-color: transparent;
-      }
     }
+  }
 
-    :deep(.arco-tabs-content) {
-      height: calc(100% - 28px);
-      padding-top: 0;
-      .arco-tabs-content-list {
-        height: 100%;
-      }
-    }
+  .explain-content {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    margin: var(--gpt-page-padding-y) var(--gpt-page-padding-x);
+    border: 1px solid var(--gpt-border-default);
+    border-radius: var(--gpt-radius-md);
+    background: var(--gpt-bg-panel);
+    box-shadow: var(--gpt-shadow-sm);
 
-    .arco-tabs-nav-tab-list {
-      display: flex;
-    }
-    > .arco-tabs-content > .arco-tabs-content-list > .arco-tabs-content-item {
-      padding: 0;
+    > :first-child {
       height: 100%;
-      overflow: hidden;
+      overflow: auto;
     }
   }
 
   .raw-json-card {
-    padding: 8px 12px;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-
-    :deep(.arco-card-header) {
-      height: 40px;
-      flex-shrink: 0;
-    }
-
-    :deep(.arco-card-body) {
-      flex: 1;
-      min-height: 0;
-      padding: 8px;
-      overflow: auto;
-    }
+    padding: var(--gpt-toolbar-padding);
+    overflow: auto;
+    background: var(--gpt-bg-panel);
 
     .raw-json {
-      font-size: 12px;
+      font-size: var(--gpt-font-base);
+      color: var(--gpt-text-primary);
       margin: 0;
       white-space: pre-wrap;
     }

@@ -1,5 +1,5 @@
 <template lang="pug">
-.editor
+.editor.gpt-light-editor
   .main
     Codemirror(
       v-model="localSql"
@@ -67,7 +67,7 @@
   const customSelectionTheme = EditorView.theme({
     '&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection':
       {
-        backgroundColor: 'grey',
+        backgroundColor: 'var(--gpt-bg-code-selection)',
       },
   })
 
@@ -175,7 +175,7 @@
     padding: 10px;
     width: 600px;
     background-color: var(--color-bg-popup);
-    border-radius: 4px;
+    border-radius: var(--gpt-radius-sm);
     box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.15);
     min-height: 130px;
   }
@@ -187,13 +187,13 @@
   :deep(.arco-radio-group-button) {
     background-color: var(--color-fill-2);
   }
-  :deep(.cm-editor) {
-    outline: none;
-  }
   .editor {
-    background-color: var(--color-bg-2);
-    border-bottom-left-radius: 2px;
-    border-bottom-right-radius: 2px;
-    border: 1px solid var(--color-neutral-3);
+    overflow: hidden;
+    border-radius: var(--gpt-radius-sm);
+  }
+
+  :deep(.cm-editor),
+  :deep(.ͼ1.cm-editor) {
+    outline: none;
   }
 </style>
