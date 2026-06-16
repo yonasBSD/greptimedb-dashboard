@@ -1,6 +1,6 @@
 FROM --platform=linux/amd64 node:18-buster as builder
 ## install pnpm
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.12.1
 
 WORKDIR /greptimedb-dashboard
 
